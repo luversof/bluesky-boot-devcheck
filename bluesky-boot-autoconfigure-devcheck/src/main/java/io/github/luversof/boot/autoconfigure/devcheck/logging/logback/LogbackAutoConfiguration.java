@@ -34,7 +34,17 @@ public class LogbackAutoConfiguration {
 		var logbackAppender = new LogbackAppender<>(logbackAppenderService);
 		logbackAppender.setContext(loggerContext);
 		logbackAppender.setName("blueskyBootLogbackAppender");
-		logbackAppender.setEncoder(appender == null ? new PatternLayoutEncoder() : appender.getEncoder());
+
+		if (appender == null) {
+			var encoder = new PatternLayoutEncoder();
+			encoder.setPattern("%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n");
+			encoder.setContext(loggerContext);
+			encoder.start();
+			logbackAppender.setEncoder(encoder);
+		} else {
+			logbackAppender.setEncoder(appender.getEncoder());
+		}
+		
 
 		logbackAppender.start();
 		loggerContext.getLogger(Logger.ROOT_LOGGER_NAME).addAppender(logbackAppender);

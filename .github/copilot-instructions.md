@@ -71,10 +71,8 @@ bluesky-boot.dev-check.enabled=false
 ### Thymeleaf UI (권장)
 
 ```html
-- Controller: com.example.UserController
-  - GET /users: getAllUsers()
-  - POST /users: createUser()
-  - GET /users/{id}: getUser()
+- Controller: com.example.UserController - GET /users: getAllUsers() - POST
+/users: createUser() - GET /users/{id}: getUser()
 ```
 
 ### JSON 형식

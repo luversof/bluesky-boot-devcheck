@@ -3,16 +3,15 @@ package io.github.luversof.boot.devcheck.logging.logback.service;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-
 public class LogbackAppenderService<E> {
 
 	private static final int QUEUE_SIZE = 500;
 
-	@Getter
 	private Queue<LogObject<E>> logQueue = new LinkedBlockingQueue<>(QUEUE_SIZE);
+	
+	public Queue<LogObject<E>> getLogQueue() {
+		return logQueue;
+	}
 
 	public void addLog(E eventObject, String logMessage) {
 		if (logQueue.size() >= QUEUE_SIZE) {
@@ -21,11 +20,33 @@ public class LogbackAppenderService<E> {
 		logQueue.offer(new LogObject<>(eventObject, logMessage));
 	}
 
-	@Data
-	@AllArgsConstructor
 	public static class LogObject<E> {
+		
 		E eventObject;
 		String logMessage;
+		
+		public LogObject(E eventObject, String logMessage) {
+			super();
+			this.eventObject = eventObject;
+			this.logMessage = logMessage;
+		}
+
+		public E getEventObject() {
+			return eventObject;
+		}
+
+		public void setEventObject(E eventObject) {
+			this.eventObject = eventObject;
+		}
+
+		public String getLogMessage() {
+			return logMessage;
+		}
+
+		public void setLogMessage(String logMessage) {
+			this.logMessage = logMessage;
+		}
+		
 	}
 
 }

@@ -3,13 +3,15 @@ package io.github.luversof.boot.autoconfigure.devcheck;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.controller.DevCheckCoreController;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 class SimpleTests {
+	
+	private static final Logger log = LoggerFactory.getLogger(SimpleTests.class);
 
 	@Test
 	void patternTest() {

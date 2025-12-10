@@ -10,9 +10,7 @@ import io.github.luversof.boot.devcheck.domain.DevCheckUtilInfo;
 import io.github.luversof.boot.devcheck.service.DevCheckUtilInfoService;
 import io.github.luversof.boot.devcheck.service.servlet.DevCheckInfoMvcService;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 @DevCheckApiController
 public class DevCheckApiMvcController {
 	
@@ -20,6 +18,12 @@ public class DevCheckApiMvcController {
 	
 	private final DevCheckUtilInfoService devCheckUtilInfoService;
 	
+	public DevCheckApiMvcController(DevCheckInfoMvcService devCheckInfoMvcService, DevCheckUtilInfoService devCheckUtilInfoService) {
+		super();
+		this.devCheckInfoMvcService = devCheckInfoMvcService;
+		this.devCheckUtilInfoService = devCheckUtilInfoService;
+	}
+
 	@GetMapping("/devCheckInfoList")
 	public List<DevCheckInfo> devCheckInfoList(HttpServletRequest request) {
 		return devCheckInfoMvcService.getDevCheckInfoList();

@@ -19,15 +19,18 @@ import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import io.github.luversof.boot.devcheck.annotation.DevCheckUtil;
 import io.github.luversof.boot.devcheck.domain.DevCheckUtilInfo;
 import io.github.luversof.boot.devcheck.domain.DevCheckUtilMethodInfo;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 public class DevCheckUtilInfoService {
 	
 	List<DevCheckUtilInfo> devCheckUtilInfoList = new ArrayList<>();
 	
 	private final DevCheckProperties devCheckProperties;
 	
+	public DevCheckUtilInfoService(DevCheckProperties devCheckProperties) {
+		super();
+		this.devCheckProperties = devCheckProperties;
+	}
+
 	public List<DevCheckUtilInfo> getDevCheckUtilInfo() {
 		if (!devCheckUtilInfoList.isEmpty()) {
 			return devCheckUtilInfoList;

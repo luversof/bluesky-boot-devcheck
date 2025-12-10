@@ -11,14 +11,17 @@ import ch.qos.logback.core.CoreConstants;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import io.github.luversof.boot.devcheck.logging.logback.service.LogbackAppenderService;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 @DevCheckController
 @RequestMapping(value = "/blueskyBoot/devcheck/logging/logback", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DevCheckLogbackController {
 	
 	private final LogbackAppenderService<ILoggingEvent> playncLogbackAppenderService;
+
+	public DevCheckLogbackController(LogbackAppenderService<ILoggingEvent> playncLogbackAppenderService) {
+		super();
+		this.playncLogbackAppenderService = playncLogbackAppenderService;
+	}
 
 	@DevCheckDescription("Check last 500 line log")
 	@GetMapping("/logView")

@@ -10,15 +10,19 @@ import io.github.luversof.boot.devcheck.domain.DevCheckInfo;
 import io.github.luversof.boot.devcheck.domain.DevCheckUtilInfo;
 import io.github.luversof.boot.devcheck.service.DevCheckUtilInfoService;
 import io.github.luversof.boot.devcheck.service.reactive.DevCheckInfoWebFluxService;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 @DevCheckApiController
 public class DevCheckApiWebFluxController {
 	
 	private final DevCheckInfoWebFluxService devCheckInfoWebFluxService;
 
 	private final DevCheckUtilInfoService devCheckUtilInfoService;
+
+	public DevCheckApiWebFluxController(DevCheckInfoWebFluxService devCheckInfoWebFluxService, DevCheckUtilInfoService devCheckUtilInfoService) {
+		super();
+		this.devCheckInfoWebFluxService = devCheckInfoWebFluxService;
+		this.devCheckUtilInfoService = devCheckUtilInfoService;
+	}
 
 	@GetMapping("/devCheckInfoList")
 	public List<DevCheckInfo> devCheckInfoList(ServerWebExchange exchange) {

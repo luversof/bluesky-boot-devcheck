@@ -4,9 +4,6 @@ import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import lombok.Data;
-
-@Data
 @ConfigurationProperties(prefix = "bluesky-boot.dev-check")
 public class DevCheckProperties {
 
@@ -19,5 +16,29 @@ public class DevCheckProperties {
 	private List<String> basePackageList;
 	
 	private String[] pathPrefixes;
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public List<String> getBasePackageList() {
+		return basePackageList;
+	}
+
+	public void setBasePackageList(List<String> basePackageList) {
+		this.basePackageList = basePackageList;
+	}
+
+	public String[] getPathPrefixes() {
+		return pathPrefixes;
+	}
+
+	public void setPathPrefixes(String[] pathPrefixes) {
+		this.pathPrefixes = pathPrefixes;
+	}
 	
 }

@@ -8,11 +8,11 @@ import org.springframework.boot.webmvc.autoconfigure.DispatcherServletAutoConfig
 import org.springframework.boot.webmvc.autoconfigure.WebMvcAutoConfiguration;
 
 import io.github.luversof.boot.autoconfigure.devcheck.servlet.DevCheckMvcAutoConfiguration;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class AutoConfigurationTestInfo {
+	
+	private AutoConfigurationTestInfo() {
+	}
 
 	public static final String[] BASE_PROPERTY = new String[] { "net-profile=localdev", "bluesky-boot.dev-check.enabled=true" };
 

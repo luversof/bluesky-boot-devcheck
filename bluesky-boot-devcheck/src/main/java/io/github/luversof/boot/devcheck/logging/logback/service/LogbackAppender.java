@@ -2,7 +2,6 @@ package io.github.luversof.boot.devcheck.logging.logback.service;
 
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.encoder.Encoder;
-import lombok.Setter;
 
 public class LogbackAppender<E> extends UnsynchronizedAppenderBase<E> {
 
@@ -12,8 +11,11 @@ public class LogbackAppender<E> extends UnsynchronizedAppenderBase<E> {
 		this.blueskyLogbackAppenderService = blueskyLogbackAppenderService;
 	}
 
-	@Setter
 	private Encoder<E> encoder;
+	
+	public void setEncoder(Encoder<E> encoder) {
+		this.encoder = encoder;
+	}
 
 	@Override
 	protected void append(E eventObject) {

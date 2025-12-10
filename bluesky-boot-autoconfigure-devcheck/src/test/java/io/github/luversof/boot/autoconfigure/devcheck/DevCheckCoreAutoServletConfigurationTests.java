@@ -6,6 +6,8 @@ import static io.github.luversof.boot.autoconfigure.devcheck.AutoConfigurationTe
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener;
 import org.springframework.boot.logging.LogLevel;
@@ -13,10 +15,10 @@ import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import io.github.luversof.boot.devcheck.controller.DevCheckCoreController;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 class DevCheckCoreAutoServletConfigurationTests {
+	
+	private static final Logger log = LoggerFactory.getLogger(DevCheckCoreAutoServletConfigurationTests.class);
 	
 	private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner()
 			.withInitializer(ConditionEvaluationReportLoggingListener.forLogLevel(LogLevel.INFO))

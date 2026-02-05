@@ -2,6 +2,7 @@ package io.github.luversof.boot.autoconfigure.devcheck.servlet;
 
 import java.lang.reflect.Method;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -60,11 +61,11 @@ public class DevCheckMvcAutoConfiguration implements WebMvcConfigurer {
 	WebMvcRegistrations blueskyBootDevCheckwebMvcRegistrations() {
 		return new WebMvcRegistrations() {
 			@Override
-			public RequestMappingHandlerMapping getRequestMappingHandlerMapping() {
+			public @NonNull RequestMappingHandlerMapping getRequestMappingHandlerMapping() {
 				return new RequestMappingHandlerMapping() {
 
 					@Override
-					protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
+					protected @NonNull RequestMappingInfo getMappingForMethod(@NonNull Method method, @NonNull Class<?> handlerType) {
 						RequestMappingInfo mappingInfo = super.getMappingForMethod(method, handlerType);
 						if (mappingInfo != null 
 							&& (
@@ -84,7 +85,7 @@ public class DevCheckMvcAutoConfiguration implements WebMvcConfigurer {
 	}
 
 	@Override
-	public void addViewControllers(ViewControllerRegistry registry) {
+	public void addViewControllers(@NonNull ViewControllerRegistry registry) {
 		for (var pathPrefix : pathPrefixes) {
 			registry.addRedirectViewController(pathPrefix, pathPrefix + "/index");
 		}

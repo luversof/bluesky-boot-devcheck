@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.annotation.AnnotatedElementUtils;
@@ -86,7 +87,7 @@ public class DevCheckUtilInfoService {
 		return new DevCheckUtilInfo(targetClass.getSimpleName(), devCheckUtilMethodInfoList);
 	}
 	
-	private DevCheckUtilMethodInfo createDevCheckUtilMethodInfo(Method method) {
+	private DevCheckUtilMethodInfo createDevCheckUtilMethodInfo(@NonNull Method method) {
 		String description = null;
 		if (AnnotatedElementUtils.hasAnnotation(method, DevCheckDescription.class)) {
 			var mergedAnnotation = AnnotatedElementUtils.findMergedAnnotation(method, DevCheckDescription.class);

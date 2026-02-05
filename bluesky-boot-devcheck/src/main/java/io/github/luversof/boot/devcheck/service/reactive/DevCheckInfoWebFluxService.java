@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.http.MediaType;
@@ -90,7 +91,7 @@ public class DevCheckInfoWebFluxService {
 		return new DevCheckInfo(beanName, urlList, description);
 	}
 	
-	public String getUrlWithParameter(String pattern, Method method) {
+	public String getUrlWithParameter(String pattern, @NonNull Method method) {
 		var stringBuilder = new StringBuilder();
 		stringBuilder.append(pattern);
 		

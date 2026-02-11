@@ -3,7 +3,6 @@ package io.github.luversof.boot.autoconfigure.devcheck.reactive;
 import java.lang.reflect.Method;
 import java.net.URI;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -65,11 +64,11 @@ public class DevCheckWebFluxAutoConfiguration {
 		return new WebFluxRegistrations() {
 
 			@Override
-			public @NonNull RequestMappingHandlerMapping getRequestMappingHandlerMapping() {
+			public RequestMappingHandlerMapping getRequestMappingHandlerMapping() {
 				return new RequestMappingHandlerMapping() {
 
 					@Override
-					protected @NonNull RequestMappingInfo getMappingForMethod(@NonNull Method method, @NonNull Class<?> handlerType) {
+					protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
 						RequestMappingInfo mappingInfo = super.getMappingForMethod(method, handlerType);
 						if (mappingInfo != null 
 							&& (

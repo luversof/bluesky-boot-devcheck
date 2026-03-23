@@ -92,7 +92,7 @@ public class DevCheckWebFluxAutoConfiguration {
 	RouterFunction<ServerResponse> blueskyBootDevCheckViewRouterFunction() {
 		var builder = RouterFunctions.route();
 		for (var pathPrefix : pathPrefixes) {
-			builder.route(RequestPredicates.GET(pathPrefix), request -> ServerResponse.temporaryRedirect(URI.create(pathPrefix + "/index")).build());
+			builder.route(RequestPredicates.GET(pathPrefix), _ -> ServerResponse.temporaryRedirect(URI.create(pathPrefix + "/index")).build());
 		}
 		return builder.build();
 	}

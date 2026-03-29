@@ -12,7 +12,7 @@
 	</parent>
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>It is a library that lists and shows the methods of the controller and the utility static methods used for development confirmation.</description>
-	<url>https://github.com/luversof/bluesky-boot-autoconfigure-devcheck</url>
+	<url>https://github.com/luversof/bluesky-boot-devcheck</url>
 
 	<modules>
 		<module>bluesky-boot-devcheck-parent</module>
@@ -31,9 +31,9 @@
 	</licenses>
 
 	<scm>
-		<connection>scm:git:git://github.com/luversof/bluesky-boot-autoconfigure-devcheck.git</connection>
-		<developerConnection>scm:git:ssh://github.com:luversof/bluesky-boot-autoconfigure-devcheck.git</developerConnection>
-		<url>http://github.com/luversof/bluesky-boot-autoconfigure-devcheck/tree/main</url>
+		<connection>scm:git:git://github.com/luversof/bluesky-boot-devcheck.git</connection>
+		<developerConnection>scm:git:ssh://github.com:luversof/bluesky-boot-devcheck.git</developerConnection>
+		<url>http://github.com/luversof/bluesky-boot-devcheck/tree/main</url>
 	</scm>
 
 	<developers>

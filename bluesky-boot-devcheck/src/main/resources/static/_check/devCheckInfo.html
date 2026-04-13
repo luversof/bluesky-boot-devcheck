@@ -28,10 +28,11 @@ h2 { margin: 0; padding: 10px 10px 20px 10px; font-size: 30px; letter-spacing: -
 /* 3-column grid: Controller | Method | URL */
 .devcheck-row {
   display: grid;
-  grid-template-columns: 300px 230px 1fr;
+  grid-template-columns: 280px 300px 1fr;
   align-items: start;
   width: 100%;
 }
+.devcheck-row > * { min-width: 0; }
 
 /* 컬럼 헤더 행 */
 .devcheck-table { border-top: 5px solid #f4f5f7; }
@@ -68,8 +69,8 @@ h2 { margin: 0; padding: 10px 10px 20px 10px; font-size: 30px; letter-spacing: -
 .devcheck-method-row .col-method { padding: 9px 10px 9px 0; }
 .devcheck-method-row .col-url { padding: 9px 10px 9px 0; }
 
-.method-name { display: block; font-size: 13px; font-weight: 500; }
-.method-desc { display: block; font-size: 12px; color: #5fb8e3; letter-spacing: -0.5px; margin-top: 2px; }
+.method-name { display: block; font-size: 13px; font-weight: 500; overflow-wrap: break-word; word-break: break-all; }
+.method-desc { display: block; font-size: 12px; color: #5fb8e3; letter-spacing: -0.5px; margin-top: 2px; overflow-wrap: break-word; }
 
 /* URL */
 .url-item { display: block; font-size: 13px; padding: 1px 0; }

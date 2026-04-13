@@ -1,145 +1,273 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <title>DevCheckUtil</title>
 <style>
 * { box-sizing: border-box; color: #494949; }
-body { margin: 0; padding: 0;}
-.util-container { min-width: 800px; padding: 15px; }
+body { margin: 0; padding: 0; }
+.util-container { min-width: 700px; padding: 15px; }
 .util-container a { text-decoration: none; }
-.util-container a:hover { text-decoration: underline; color: #ff5f3c;}
-.util-container h2 { margin: 0; padding: 10px 10px 20px 10px; font-size: 30px; letter-spacing: -1.2px; color: #1f1f1f; font-weight: normal;}
-.util-container > ul { width: 100%; margin: 0; padding: 0; list-style-type: none; display: table; font-size: 14px;}
-.util-container > ul > li { margin: 0; padding: 0; list-style-type: none; width: 100%; box-sizing: border-box; border-bottom: 1px solid #eaecef;}
-.util-container .method-name { display: table-cell; width: 280px; }
-.util-container .method-description { display: table-cell; }
-.util-container .thead { padding: 10px 10px 10px 15px; font-weight: bold; font-size: 18px; border-top: 5px solid #f4f5f7}
-.util-container .thead .value { display: table-cell; }
-.util-container .tr .method-name { padding: 10px 10px 10px 15px; font-weight: bold; border-right: 1px solid #eaecef; }
-.util-container .tr .method-description { padding: 0 0 10px 15px; line-height: 1.4; }
-.util-container .tr .method-description ul { margin: 0; padding: 0; }
-.util-container .tr .method-description li { padding-bottom: 8px; list-style-type: none; }
-.util-container .tr .method-comment { display: block; color: #008200; letter-spacing: -.5px}
-.util-container div { padding: 15px;}
+.util-container a:hover { text-decoration: underline; color: #ff5f3c; }
+h2 { margin: 0; padding: 10px 10px 20px 10px; font-size: 30px; letter-spacing: -1.2px; color: #1f1f1f; font-weight: normal; }
+.devcheck-nav { padding: 8px 0 15px; display: flex; align-items: center; gap: 10px; }
+.devcheck-nav a { display: inline-block; padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+.devcheck-nav a:hover { background: #f4f5f7; text-decoration: none; }
+.expand-all-btn { padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: none; cursor: pointer; color: #494949; }
+.expand-all-btn:hover { background: #f4f5f7; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 .devcheck-search {
-  background: url('') no-repeat 10px 12px; /* Add a search icon to input */
+  width: 100%; font-size: 16px;
+  padding: 12px 20px 12px 40px;
+  border: 1px solid #ddd; margin-bottom: 4px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px 50%;
   background-size: 18px auto;
-  width: 100%; /* Full-width */
-  font-size: 16px; /* Increase font-size */
-  padding: 12px 20px 12px 40px; /* Add some padding */
-  border: 1px solid #ddd; /* Add a grey border */
-  margin-bottom: 12px; /* Add some space below the input */
+}
+.devcheck-summary { font-size: 12px; color: #999; padding: 0 4px 12px; }
+
+/* 2-column grid: Util Name | Method */
+.util-row {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  align-items: start;
+  width: 100%;
+}
+
+.util-table { border-top: 5px solid #f4f5f7; }
+.util-head { background: #fafbfc; border-bottom: 2px solid #eaecef; }
+.util-head > div { padding: 10px; font-weight: bold; font-size: 15px; }
+
+/* 그룹 */
+.util-group { border-bottom: 1px solid #eaecef; }
+.util-group-header { cursor: pointer; user-select: none; }
+.util-group-header:hover { background: #f8f9fa; }
+.util-group-header .col-name { display: flex; align-items: flex-start; gap: 5px; padding: 10px; }
+.util-toggle { flex-shrink: 0; font-size: 10px; color: #aaa; margin-top: 2px; width: 12px; }
+.util-group-name { font-size: 14px; }
+.util-badge {
+  display: inline-block; margin-left: 6px; padding: 1px 7px;
+  border-radius: 10px; background: #e8f0fe; color: #3466c8;
+  font-size: 11px; font-weight: bold; vertical-align: middle;
+}
+
+.util-group-body { display: none; border-top: 1px solid #f0f0f0; }
+.util-group-body.open { display: block; }
+
+/* Method 행 */
+.util-method-row { background: #fafbfc; border-bottom: 1px solid #f0f0f0; }
+.util-method-row:last-child { border-bottom: none; }
+.util-method-row .col-name { padding: 9px 10px; }
+.util-method-row .col-method { padding: 9px 10px 9px 0; }
+.method-sig { display: block; font-size: 13px; font-family: monospace; }
+.method-comment { display: block; font-size: 12px; color: #008200; letter-spacing: -0.5px; margin-top: 2px; }
+
+.no-results {
+  display: none; padding: 40px 10px; text-align: center;
+  color: #999; font-size: 14px; border-top: 1px solid #eaecef;
 }
 </style>
 <script>
-	function createDevCheckUtilInfoElement(devCheckUtilInfo) {
-		
-		var devCheckInfoElement = document.createElement("li");
-		devCheckInfoElement.className = "tr devcheck-list";
-		
-		var methodNameDiv = document.createElement("div");
-		methodNameDiv.className = "method-name";
-		methodNameDiv.append(document.createTextNode(devCheckUtilInfo.methodName));
-		devCheckInfoElement.appendChild(methodNameDiv)
-		
-		var methodDescriptionDiv = document.createElement("div");
-		methodDescriptionDiv.className = "method-description";
-		
-		var ul = document.createElement("ul");
-		
-		devCheckUtilInfo.methodInfoList.forEach(methodInfo => {
-			
-			var li = document.createElement("li");
-			li.className = "value";
-			
-			var methodCommentSpan = document.createElement("span");
-			methodCommentSpan.className = "method-comment";
-			methodCommentSpan.append(document.createTextNode(methodInfo.description === null ? "" : methodInfo.description));
-			li.appendChild(methodCommentSpan);
-			
-			var methodInfoSpan = document.createElement("span");
-			methodInfoSpan.className = "method-info";
-			methodInfoSpan.append(document.createTextNode(methodInfo.returnType + " " + methodInfo.method + "(" + methodInfo.parameterList.join() + ")"));
-			li.appendChild(methodInfoSpan);
-			
-			ul.appendChild(li);
-		});
-		
-		methodDescriptionDiv.appendChild(ul);
-		devCheckInfoElement.appendChild(methodDescriptionDiv);
-		
-		return devCheckInfoElement;
-	}
-	
-	function displayDevCheckUtilInfoList(devCheckUtilInfoList){
-		devCheckUtilInfoList.forEach(devCheckUtilInfo => {
-			var devCheckUtilInfoElement = createDevCheckUtilInfoElement(devCheckUtilInfo);
-			document.getElementById("devCheckUtilInfoList").appendChild(devCheckUtilInfoElement);
-		});
-	}
-	
-	function devCheckSearch() {
-		var searchValue = document.getElementById("devCheckSearchInput").value.toUpperCase();
-		var list = document.getElementsByClassName("devcheck-list");
+function createGroupElement(group) {
+  var container = document.createElement("div");
+  container.className = "util-group";
 
-		for (const element of list) {
-			var methodName = element.getElementsByClassName("method-name")[0].innerText;
-			if (methodName.toUpperCase().indexOf(searchValue) > -1) {
-				element.style.display = "";
-			} else {
-				element.style.display = "none";
-			}
-		}
-	}
-	
-	function devCheckSearchWithHash() {
-		if (location.hash != "") {
-			document.getElementById("devCheckSearchInput").value = location.hash.substring(1);
-			devCheckSearch();
-		}
-	}
-	
-	window.onload = async function(){
-		var response = await fetch("devCheckUtilInfoList", {
-			"method": "GET",
-			"headers": {
-				"Content-Type": "application/json",
-				"Accept": "application/json"
-			}
-		});
-		
-		if (response.status !== 200) {
-			alert("devCheckUtil 목록 호출에 에러가 발생하였습니다.");
-			return;
-		}
-		
-		var devCheckUtilInfoList = await response.json();
-		displayDevCheckUtilInfoList(devCheckUtilInfoList);
-		devCheckSearchWithHash();
-	};
-	
-	window.onhashchange = function() {
-		devCheckSearchWithHash();
-	}
+  /* 그룹 헤더 */
+  var header = document.createElement("div");
+  header.className = "util-row util-group-header";
+  header.addEventListener("click", function() { toggleGroup(container); });
+
+  var col1 = document.createElement("div");
+  col1.className = "col-name";
+  var toggle = document.createElement("span");
+  toggle.className = "util-toggle";
+  toggle.textContent = "\u25b6";
+  col1.appendChild(toggle);
+  var nameEl = document.createElement("span");
+  nameEl.className = "util-group-name";
+  nameEl.textContent = group.utilName;
+  var badge = document.createElement("span");
+  badge.className = "util-badge";
+  badge.textContent = group.methods.length;
+  nameEl.appendChild(badge);
+  col1.appendChild(nameEl);
+  header.appendChild(col1);
+  header.appendChild(document.createElement("div"));
+  container.appendChild(header);
+
+  /* 펼쳐진 영역 */
+  var body = document.createElement("div");
+  body.className = "util-group-body";
+
+  group.methods.forEach(function(mi) {
+    var row = document.createElement("div");
+    row.className = "util-row util-method-row";
+
+    var mc1 = document.createElement("div");
+    mc1.className = "col-name";
+    row.appendChild(mc1);
+
+    var mc2 = document.createElement("div");
+    mc2.className = "col-method";
+    var sig = document.createElement("span");
+    sig.className = "method-sig";
+    sig.textContent = mi.returnType + " " + mi.method + "(" + mi.parameterList.join(", ") + ")";
+    mc2.appendChild(sig);
+    if (mi.description) {
+      var desc = document.createElement("span");
+      desc.className = "method-comment";
+      desc.textContent = mi.description;
+      mc2.appendChild(desc);
+    }
+    row.appendChild(mc2);
+    body.appendChild(row);
+  });
+
+  container.appendChild(body);
+  return container;
+}
+
+function toggleGroup(container) {
+  var body = container.querySelector(".util-group-body");
+  var toggle = container.querySelector(".util-toggle");
+  var isOpen = body.classList.toggle("open");
+  toggle.textContent = isOpen ? "\u25bc" : "\u25b6";
+  updateExpandAllBtn();
+}
+
+function displayDevCheckUtilInfoList(list) {
+  var listEl = document.getElementById("devCheckUtilInfoList");
+  list.forEach(function(item) {
+    var group = { utilName: item.methodName, methods: item.methodInfoList };
+    listEl.appendChild(createGroupElement(group));
+  });
+  devCheckSearch();
+}
+
+function devCheckSearch() {
+  var searchValue = document.getElementById("devCheckSearchInput").value.toLowerCase().trim();
+
+  if (searchValue) {
+    history.replaceState(null, "", "#" + encodeURIComponent(searchValue));
+  } else {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+
+  var groups = document.querySelectorAll("#devCheckUtilInfoList .util-group");
+  var visibleGroupCount = 0;
+  var visibleMethodCount = 0;
+
+  groups.forEach(function(group) {
+    var methodRows = group.querySelectorAll(".util-method-row");
+    var groupVisibleMethods = 0;
+    var utilName = group.querySelector(".util-group-name").textContent.toLowerCase();
+
+    methodRows.forEach(function(row) {
+      var rowText = row.textContent.toLowerCase();
+      var matched = !searchValue || rowText.includes(searchValue) || utilName.includes(searchValue);
+      row.style.display = matched ? "" : "none";
+      if (matched) groupVisibleMethods++;
+    });
+
+    if (!searchValue) {
+      group.style.display = "";
+      group.querySelector(".util-group-body").classList.remove("open");
+      group.querySelector(".util-toggle").textContent = "\u25b6";
+      visibleGroupCount++;
+      visibleMethodCount += methodRows.length;
+    } else if (groupVisibleMethods > 0) {
+      group.style.display = "";
+      group.querySelector(".util-group-body").classList.add("open");
+      group.querySelector(".util-toggle").textContent = "\u25bc";
+      visibleGroupCount++;
+      visibleMethodCount += groupVisibleMethods;
+    } else {
+      group.style.display = "none";
+    }
+  });
+
+  var summary = document.getElementById("devCheckSummary");
+  if (summary) {
+    var prefix = searchValue ? "\uac80\uc0c9 \uacb0\uacfc: " : "";
+    summary.textContent = prefix + visibleGroupCount + "\uac1c Util / " + visibleMethodCount + "\uac1c Method";
+  }
+
+  document.getElementById("noResults").style.display = visibleGroupCount === 0 ? "block" : "none";
+  updateExpandAllBtn();
+}
+
+function expandAll() {
+  var groups = Array.from(document.querySelectorAll("#devCheckUtilInfoList .util-group")).filter(function(g) {
+    return g.style.display !== "none";
+  });
+  var allOpen = groups.length > 0 && groups.every(function(g) {
+    return g.querySelector(".util-group-body").classList.contains("open");
+  });
+  groups.forEach(function(g) {
+    var body = g.querySelector(".util-group-body");
+    var toggle = g.querySelector(".util-toggle");
+    if (allOpen) {
+      body.classList.remove("open");
+      toggle.textContent = "\u25b6";
+    } else {
+      body.classList.add("open");
+      toggle.textContent = "\u25bc";
+    }
+  });
+  updateExpandAllBtn();
+}
+
+function updateExpandAllBtn() {
+  var btn = document.getElementById("expandAllBtn");
+  if (!btn) return;
+  var groups = Array.from(document.querySelectorAll("#devCheckUtilInfoList .util-group")).filter(function(g) {
+    return g.style.display !== "none";
+  });
+  var allOpen = groups.length > 0 && groups.every(function(g) {
+    return g.querySelector(".util-group-body").classList.contains("open");
+  });
+  btn.textContent = allOpen ? "\ubaa8\ub450 \uc811\uae30" : "\ubaa8\ub450 \ud3bc\uce58\uae30";
+}
+
+function devCheckSearchWithHash() {
+  if (location.hash !== "") {
+    document.getElementById("devCheckSearchInput").value = decodeURIComponent(location.hash.substring(1));
+    devCheckSearch();
+  }
+}
+
+window.onload = async function() {
+  var response = await fetch("devCheckUtilInfoList", {
+    method: "GET",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" }
+  });
+  if (response.status !== 200) {
+    alert("devCheckUtil \ubaa9\ub85d \ud638\ucd9c\uc5d0 \uc5d0\ub7ec\uac00 \ubc1c\uc0dd\ud558\uc600\uc2b5\ub2c8\ub2e4.");
+    return;
+  }
+  displayDevCheckUtilInfoList(await response.json());
+  devCheckSearchWithHash();
+};
+window.onhashchange = function() { devCheckSearchWithHash(); };
 </script>
 </head>
 <body>
 <div class="util-container">
-	<h2>Util static method List</h2>
-	
-	<div>
-		<a href="index">Go to DevCheck List</a>
-	</div>
-	
-	<input type="text" id="devCheckSearchInput" autofocus class="devcheck-search" onkeyup="devCheckSearch()" placeholder="Enter what you want to search for." />
-	
-	<ul id="devCheckUtilInfoList">
-		<li class="thead">
-			<span class="method-name">Util name</span>
-			<span class="method-description">method</span>
-		</li>
-	</ul>
+  <h2>Util static method List</h2>
+  <div class="devcheck-nav">
+    <a href="index">Go to DevCheck List</a>
+    <button id="expandAllBtn" class="expand-all-btn" onclick="expandAll()">&#xBAA8;&#xB450; &#xD3BC;&#xCE58;&#xAE30;</button>
+  </div>
+  <label for="devCheckSearchInput" class="sr-only">&#xAC80;&#xC0C9;</label>
+  <input type="text" id="devCheckSearchInput" autofocus class="devcheck-search" onkeyup="devCheckSearch()" placeholder="Enter what you want to search for." />
+  <div id="devCheckSummary" class="devcheck-summary"></div>
+  <div class="util-table">
+    <div class="util-row util-head">
+      <div class="col-name">Util Name</div>
+      <div class="col-method">Method</div>
+    </div>
+    <div id="devCheckUtilInfoList"></div>
+  </div>
+  <div id="noResults" class="no-results">&#xAC80;&#xC0C9; &#xACB0;&#xACFC;&#xAC00; &#xC5C6;&#xC2B5;&#xB2C8;&#xB2E4;.</div>
 </div>
 </body>
 </html>

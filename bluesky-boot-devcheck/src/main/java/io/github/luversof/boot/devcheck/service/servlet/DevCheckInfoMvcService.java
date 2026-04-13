@@ -87,28 +87,15 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
 			.filter(handlerMapping -> 
 				handlerMapping.getValue().getBeanType().isAnnotationPresent(DevCheckController.class)
 				&& (
-					(
-						handlerMapping.getKey().getPatternsCondition() != null
-						&& handlerMapping.getKey().getPatternsCondition().getPatterns().stream().anyMatch(pattern -> {
-							for (var pathPrefix : devCheckProperties.getPathPrefixes()) { 
-								if (pattern.startsWith(pathPrefix)) {
-									return true;
-								}
+					handlerMapping.getKey().getPathPatternsCondition() != null
+					&& handlerMapping.getKey().getPathPatternsCondition().getPatterns().stream().anyMatch(pattern -> {
+						for(var pathPrefix : devCheckProperties.getPathPrefixes()) {
+							if (pattern.getPatternString().startsWith(pathPrefix)) {
+								return true;
 							}
-							return false;
-						})
-					)
-					|| (
-						handlerMapping.getKey().getPathPatternsCondition() != null
-						&& handlerMapping.getKey().getPathPatternsCondition().getPatterns().stream().anyMatch(pattern -> {
-							for(var pathPrefix : devCheckProperties.getPathPrefixes()) {
-								if (pattern.getPatternString().startsWith(pathPrefix)) {
-									return true;
-								}
-							}
-							return false;
-						})
-					)
+						}
+						return false;
+					})
 				)
 				&& handlerMapping.getKey().getProducesCondition().getExpressions().stream().anyMatch(mediaTypeExpression -> mediaTypeExpression.getMediaType().equals(MediaType.APPLICATION_JSON)))
 			.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
@@ -118,27 +105,19 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
 		var requestMappingInfo = handlerMethodMap.getKey();
 		var handlerMethod = handlerMethodMap.getValue();
 		
-		// 구하려고 하는 값 : beanName, urlList, description
+		// 구하려고 하는 값 : beanName, method, urlList, description
 		String beanName = handlerMethod.getBean().toString();
+		String method = handlerMethod.getMethod().getName();
 		var urlList = new ArrayList<String>();
 		String description = null;
 		
-		var patternsCondition = requestMappingInfo.getPatternsCondition();
 		var pathPatternsCondition = requestMappingInfo.getPathPatternsCondition();
-		if (patternsCondition == null && pathPatternsCondition == null) {
-			Assert.notNull(patternsCondition, "patternsCondition or pathPatternsCondition must not null");
+		if (pathPatternsCondition == null) {
+			Assert.notNull(pathPatternsCondition, "patternsCondition or pathPatternsCondition must not null");
 		}
 		
-		if (patternsCondition != null) {
-			for (String url : patternsCondition.getPatterns()) {
-				urlList.add(getUrlWithParameter(url, handlerMethodMap.getValue().getMethod()));
-			}
-		}
-		
-		if (pathPatternsCondition != null) {
-			for (PathPattern pattern : pathPatternsCondition.getPatterns()) {
-				urlList.add(getUrlWithParameter(pattern.getPatternString(), handlerMethodMap.getValue().getMethod()));
-			}
+		for (PathPattern pattern : pathPatternsCondition.getPatterns()) {
+			urlList.add(getUrlWithParameter(pattern.getPatternString(), handlerMethodMap.getValue().getMethod()));
 		}
 	
 		var methodAnnotation = handlerMethod.getMethodAnnotation(DevCheckDescription.class);
@@ -154,7 +133,7 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
 		DevCheckUtil.sortUrlList(urlList, devCheckProperties.getPathPrefixes(), currentRequestURI);
 		
 		
-		return new DevCheckInfo(beanName, urlList, description);
+		return new DevCheckInfo(beanName, method, urlList, description);
 	}
 	
 	public String getUrlWithParameter(String pattern, Method method) {

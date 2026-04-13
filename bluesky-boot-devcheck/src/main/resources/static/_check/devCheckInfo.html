@@ -4,133 +4,373 @@
 <meta charset="UTF-8">
 <title>DevCheckInfo</title>
 <style>
-* { box-sizing: border-box; color: #494949;}
-body { margin: 0; padding: 0;}
-.devcheck-container { min-width: 800px; padding: 15px; }
+* { box-sizing: border-box; color: #494949; }
+body { margin: 0; padding: 0; }
+.devcheck-container { min-width: 860px; padding: 15px; }
 .devcheck-container a { text-decoration: none; }
-.devcheck-container a:hover { text-decoration: underline; color: #ff5f3c;}
-.devcheck-container h2 { margin: 0; padding: 10px 10px 20px 10px; font-size: 30px; letter-spacing: -1.2px; color: #1f1f1f; font-weight: normal;}
-.devcheck-container ul { width: 100%; margin: 0; padding: 0; list-style-type: none; display: table; font-size: 14px;}
-.devcheck-container li { margin: 0; padding: 10px; list-style-type: none; width: 100%; box-sizing: border-box; border-bottom: 1px solid #eaecef;}
-.devcheck-container .bean-name { display: table-cell; width: 300px;}
-.devcheck-container .url { display: table-cell ; padding: 0 0 0 20px;}
-.devcheck-container .thead { font-weight: bold; font-size: 18px; border-top: 5px solid #f4f5f7}
-.devcheck-container .devcheck-comment { display:block; font-size: 12px; color: #5fb8e3; letter-spacing: -.5px; }
-.devcheck-container div { padding: 15px;}
+.devcheck-container a:hover { text-decoration: underline; color: #ff5f3c; }
+h2 { margin: 0; padding: 10px 10px 20px 10px; font-size: 30px; letter-spacing: -1.2px; color: #1f1f1f; font-weight: normal; }
+.devcheck-nav { padding: 8px 0 15px; display: flex; align-items: center; gap: 10px; }
+.devcheck-nav a { display: inline-block; padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+.devcheck-nav a:hover { background: #f4f5f7; text-decoration: none; }
+.expand-all-btn { padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: none; cursor: pointer; color: #494949; }
+.expand-all-btn:hover { background: #f4f5f7; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 .devcheck-search {
-  background: url('') no-repeat 10px 12px; /* Add a search icon to input */
+  width: 100%; font-size: 16px;
+  padding: 12px 20px 12px 40px;
+  border: 1px solid #ddd; margin-bottom: 4px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px 50%;
   background-size: 18px auto;
-  width: 100%; /* Full-width */
-  font-size: 16px; /* Increase font-size */
-  padding: 12px 20px 12px 40px; /* Add some padding */
-  border: 1px solid #ddd; /* Add a grey border */
-  margin-bottom: 12px; /* Add some space below the input */
+}
+.devcheck-summary { font-size: 12px; color: #999; padding: 0 4px 12px; }
+
+/* 3-column grid: Controller | Method | URL */
+.devcheck-row {
+  display: grid;
+  grid-template-columns: 300px 230px 1fr;
+  align-items: start;
+  width: 100%;
+}
+
+/* 컬럼 헤더 행 */
+.devcheck-table { border-top: 5px solid #f4f5f7; }
+.devcheck-head { background: #fafbfc; border-bottom: 2px solid #eaecef; }
+.devcheck-head > div { padding: 10px; font-weight: bold; font-size: 15px; }
+.devcheck-head .col-method,
+.devcheck-head .col-url { padding-left: 0; }
+
+/* 그룹 컨테이너 */
+.devcheck-group { border-bottom: 1px solid #eaecef; }
+
+/* Controller 행 (접힌 상태) */
+.devcheck-group-header { cursor: pointer; user-select: none; }
+.devcheck-group-header:hover { background: #f8f9fa; }
+.devcheck-group-header .col-ctrl {
+  display: flex; align-items: flex-start; gap: 5px; padding: 10px;
+}
+.devcheck-toggle { flex-shrink: 0; font-size: 10px; color: #aaa; margin-top: 2px; width: 12px; }
+.devcheck-group-name { font-size: 14px; }
+.devcheck-badge {
+  display: inline-block; margin-left: 6px; padding: 1px 7px;
+  border-radius: 10px; background: #e8f0fe; color: #3466c8;
+  font-size: 11px; font-weight: bold; vertical-align: middle;
+}
+
+/* 펼쳐진 Method 목록 영역 */
+.devcheck-group-body { display: none; border-top: 1px solid #f0f0f0; }
+.devcheck-group-body.open { display: block; }
+
+/* Method 행 */
+.devcheck-method-row { background: #fafbfc; border-bottom: 1px solid #f0f0f0; }
+.devcheck-method-row:last-child { border-bottom: none; }
+.devcheck-method-row .col-ctrl { padding: 9px 10px; }
+.devcheck-method-row .col-method { padding: 9px 10px 9px 0; }
+.devcheck-method-row .col-url { padding: 9px 10px 9px 0; }
+
+.method-name { display: block; font-size: 13px; font-weight: 500; }
+.method-desc { display: block; font-size: 12px; color: #5fb8e3; letter-spacing: -0.5px; margin-top: 2px; }
+
+/* URL */
+.url-item { display: block; font-size: 13px; padding: 1px 0; }
+.url-item.url-hidden { display: none; }
+.devcheck-more-btn {
+  display: inline-block; margin-top: 4px;
+  background: none; border: none; padding: 0;
+  font-size: 12px; color: #3466c8; cursor: pointer;
+}
+.devcheck-more-btn:hover { text-decoration: underline; }
+
+/* 결과 없음 */
+.no-results {
+  display: none; padding: 40px 10px; text-align: center;
+  color: #999; font-size: 14px; border-top: 1px solid #eaecef;
 }
 </style>
 <script>
-	function createDevCheckInfoElement(devCheckInfo) {
-		var beanName = devCheckInfo.beanName;
-		var description = devCheckInfo.description;
-		var urlList = devCheckInfo.urlList;
-		
-		var devCheckInfoElement = document.createElement("li");
-		devCheckInfoElement.className = "devcheck-info";
-		
-		var beanNameSpan = document.createElement("span");
-		beanNameSpan.className = "bean-name";
-		
-		beanNameSpan.append(document.createTextNode(beanName));
-		var descriptionSpan = document.createElement("span");
-		descriptionSpan.className = "devcheck-comment";
-		descriptionSpan.append(document.createTextNode(description === null ? "" : description));
-		beanNameSpan.append(descriptionSpan);
-		
-		devCheckInfoElement.appendChild(beanNameSpan)
-		
-		var urlSpan = document.createElement("span");
-		urlSpan.className = "url"
-		var a = document.createElement("a");
-		a.target = "_blank";
-		a.href = urlList[0]
-		a.append(document.createTextNode(urlList[0]));
-		urlSpan.append(a);
-		
-		devCheckInfoElement.appendChild(urlSpan);
-		
-		return devCheckInfoElement;
-		
-	}
-	
-	function displayDevCheckInfoList(devCheckInfoList){
-		devCheckInfoList.forEach(devCheckInfo => {
-			var devCheckInfoElement = createDevCheckInfoElement(devCheckInfo);
-			document.getElementById("devCheckInfoList").appendChild(devCheckInfoElement);
-		});
-	}
-	
-	function devCheckSearch() {
-		var searchValue = document.getElementById("devCheckSearchInput").value.toUpperCase();
-		var list = document.getElementsByClassName("devcheck-info");
+var URL_PREVIEW_COUNT = 2;
 
-		for (const element of list) {
-			var a = element.getElementsByClassName("url")[0].getElementsByTagName("a")[0];
-			var targetValue = a.textContent || a.innerText;
-			if (targetValue.toUpperCase().indexOf(searchValue) > -1) {
-				element.style.display = "";
-			} else {
-				element.style.display = "none";
-			}
-		}
-	}
-	
-	function devCheckSearchWithHash() {
-		if (location.hash != "") {
-			document.getElementById("devCheckSearchInput").value = location.hash.substring(1);
-			devCheckSearch();
-		}
-	}
-	
-	window.onload = async function(){
-		var response = await fetch("devCheckInfoList", {
-			"method": "GET",
-			"headers": {
-				"Content-Type": "application/json",
-				"Accept": "application/json"
-			}
-		});
-		
-		if (response.status !== 200) {
-			alert("devCheckInfo 목록 호출에 에러가 발생하였습니다.");
-			return;
-		}
-		
-		var devCheckInfoList = await response.json();
-		displayDevCheckInfoList(devCheckInfoList);
-		devCheckSearchWithHash();
-	};
-	
-	window.onhashchange = function() {
-		devCheckSearchWithHash();
-	}
+function groupByBeanName(list) {
+  var map = new Map();
+  list.forEach(function(item) {
+    if (!map.has(item.beanName)) {
+      map.set(item.beanName, { beanName: item.beanName, methods: [] });
+    }
+    map.get(item.beanName).methods.push({
+      method: item.method,
+      description: item.description,
+      urls: item.urlList
+    });
+  });
+  return Array.from(map.values());
+}
+
+function createGroupElement(group) {
+  /* ── outer 컨테이너 ── */
+  var container = document.createElement("div");
+  container.className = "devcheck-group";
+  container.dataset.search = (
+    group.beanName + " " +
+    group.methods.map(function(m) {
+      return (m.method || "") + " " + (m.description || "") + " " + m.urls.join(" ");
+    }).join(" ")
+  ).toLowerCase();
+
+  /* ── Controller 헤더 행 ── */
+  var header = document.createElement("div");
+  header.className = "devcheck-row devcheck-group-header";
+  header.addEventListener("click", function() { toggleGroup(container); });
+
+  // col1: ▶ ControllerName [N]
+  var col1 = document.createElement("div");
+  col1.className = "col-ctrl";
+  var toggle = document.createElement("span");
+  toggle.className = "devcheck-toggle";
+  toggle.textContent = "\u25b6";
+  col1.appendChild(toggle);
+  var nameEl = document.createElement("span");
+  nameEl.className = "devcheck-group-name";
+  nameEl.textContent = group.beanName;
+  var badge = document.createElement("span");
+  badge.className = "devcheck-badge";
+  badge.textContent = group.methods.length;
+  nameEl.appendChild(badge);
+  col1.appendChild(nameEl);
+  header.appendChild(col1);
+
+  // col2, col3: 접힌 상태에서 비어 있음
+  header.appendChild(document.createElement("div"));
+  header.appendChild(document.createElement("div"));
+  container.appendChild(header);
+
+  /* ── 펼쳐진 영역 (Method 목록) ── */
+  var body = document.createElement("div");
+  body.className = "devcheck-group-body";
+
+  group.methods.forEach(function(methodInfo) {
+    var row = document.createElement("div");
+    row.className = "devcheck-row devcheck-method-row";
+
+    // col1: 빈 칸 (Controller 컬럼 폭 확보)
+    var mc1 = document.createElement("div");
+    mc1.className = "col-ctrl";
+    row.appendChild(mc1);
+
+    // col2: method 이름 + description (이름 아래)
+    var mc2 = document.createElement("div");
+    mc2.className = "col-method";
+    var mName = document.createElement("span");
+    mName.className = "method-name";
+    mName.textContent = methodInfo.method || "";
+    mc2.appendChild(mName);
+    if (methodInfo.description) {
+      var mDesc = document.createElement("span");
+      mDesc.className = "method-desc";
+      mDesc.textContent = methodInfo.description;
+      mc2.appendChild(mDesc);
+    }
+    row.appendChild(mc2);
+
+    // col3: URL 목록 (2개 초과 시 더보기/접기)
+    var mc3 = document.createElement("div");
+    mc3.className = "col-url";
+    methodInfo.urls.forEach(function(url, idx) {
+      var a = document.createElement("a");
+      a.className = "url-item" + (idx >= URL_PREVIEW_COUNT ? " url-hidden" : "");
+      a.href = url;
+      a.target = "_blank";
+      a.textContent = url;
+      mc3.appendChild(a);
+    });
+    if (methodInfo.urls.length > URL_PREVIEW_COUNT) {
+      var moreBtn = document.createElement("button");
+      var remaining = methodInfo.urls.length - URL_PREVIEW_COUNT;
+      moreBtn.className = "devcheck-more-btn";
+      moreBtn.textContent = "+" + remaining + "\uac1c \ub354\ubcf4\uae30";
+      (function(col, btn, total) {
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          var hidden = col.querySelectorAll(".url-hidden");
+          if (hidden.length > 0) {
+            hidden.forEach(function(el) { el.classList.remove("url-hidden"); });
+            btn.textContent = "\uc811\uae30";
+          } else {
+            var all = col.querySelectorAll(".url-item");
+            for (var i = URL_PREVIEW_COUNT; i < all.length; i++) {
+              all[i].classList.add("url-hidden");
+            }
+            btn.textContent = "+" + (total - URL_PREVIEW_COUNT) + "\uac1c \ub354\ubcf4\uae30";
+          }
+        });
+      })(mc3, moreBtn, methodInfo.urls.length);
+      mc3.appendChild(moreBtn);
+    }
+    row.appendChild(mc3);
+    body.appendChild(row);
+  });
+
+  container.appendChild(body);
+  return container;
+}
+
+function toggleGroup(container) {
+  var body = container.querySelector(".devcheck-group-body");
+  var toggle = container.querySelector(".devcheck-toggle");
+  var isOpen = body.classList.toggle("open");
+  toggle.textContent = isOpen ? "\u25bc" : "\u25b6";
+  updateExpandAllBtn();
+}
+
+function expandAll() {
+  var groups = Array.from(document.querySelectorAll("#devCheckInfoList .devcheck-group")).filter(function(g) {
+    return g.style.display !== "none";
+  });
+  var allOpen = groups.length > 0 && groups.every(function(g) {
+    return g.querySelector(".devcheck-group-body").classList.contains("open");
+  });
+  groups.forEach(function(g) {
+    var body = g.querySelector(".devcheck-group-body");
+    var toggle = g.querySelector(".devcheck-toggle");
+    if (allOpen) {
+      body.classList.remove("open");
+      toggle.textContent = "\u25b6";
+    } else {
+      body.classList.add("open");
+      toggle.textContent = "\u25bc";
+    }
+  });
+  updateExpandAllBtn();
+}
+
+function updateExpandAllBtn() {
+  var btn = document.getElementById("expandAllBtn");
+  if (!btn) return;
+  var groups = Array.from(document.querySelectorAll("#devCheckInfoList .devcheck-group")).filter(function(g) {
+    return g.style.display !== "none";
+  });
+  var allOpen = groups.length > 0 && groups.every(function(g) {
+    return g.querySelector(".devcheck-group-body").classList.contains("open");
+  });
+  btn.textContent = allOpen ? "\ubaa8\ub450 \uc811\uae30" : "\ubaa8\ub450 \ud3bc\uce58\uae30";
+}
+
+function displayDevCheckInfoList(devCheckInfoList) {
+  var groups = groupByBeanName(devCheckInfoList);
+  var listEl = document.getElementById("devCheckInfoList");
+  groups.forEach(function(group) {
+    listEl.appendChild(createGroupElement(group));
+  });
+  // summary 및 초기 상태는 devCheckSearch()가 담당
+  devCheckSearch();
+}
+
+function devCheckSearch() {
+  var searchValue = document.getElementById("devCheckSearchInput").value.toLowerCase().trim();
+
+  // 검색어를 URL hash에 반영 (공유 가능)
+  if (searchValue) {
+    history.replaceState(null, "", "#" + encodeURIComponent(searchValue));
+  } else {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  var groups = document.querySelectorAll("#devCheckInfoList .devcheck-group");
+  var visibleGroupCount = 0;
+  var visibleMethodCount = 0;
+  var visibleUrlCount = 0;
+
+  groups.forEach(function(group) {
+    var methodRows = group.querySelectorAll(".devcheck-method-row");
+    var groupVisibleMethods = 0;
+
+    methodRows.forEach(function(row) {
+      var rowText = row.textContent.toLowerCase();
+      var ctrlName = group.querySelector(".devcheck-group-name").textContent.toLowerCase();
+      var matched = !searchValue || rowText.includes(searchValue) || ctrlName.includes(searchValue);
+      row.style.display = matched ? "" : "none";
+      if (matched) {
+        groupVisibleMethods++;
+        visibleUrlCount += row.querySelectorAll(".url-item").length;
+      }
+    });
+
+    if (!searchValue) {
+      group.style.display = "";
+      group.querySelector(".devcheck-group-body").classList.remove("open");
+      group.querySelector(".devcheck-toggle").textContent = "\u25b6";
+      visibleGroupCount++;
+      visibleMethodCount += methodRows.length;
+      visibleUrlCount += Array.from(methodRows).reduce(function(s, r) { return s + r.querySelectorAll(".url-item").length; }, 0);
+    } else if (groupVisibleMethods > 0) {
+      group.style.display = "";
+      group.querySelector(".devcheck-group-body").classList.add("open");
+      group.querySelector(".devcheck-toggle").textContent = "\u25bc";
+      visibleGroupCount++;
+      visibleMethodCount += groupVisibleMethods;
+      // visibleUrlCount already accumulated above
+    } else {
+      group.style.display = "none";
+    }
+  });
+
+  // 검색어 없을 때 urlCount 중복 계산 방지
+  if (!searchValue) {
+    visibleUrlCount = 0;
+    document.querySelectorAll("#devCheckInfoList .devcheck-method-row").forEach(function(row) {
+      visibleUrlCount += row.querySelectorAll(".url-item").length;
+    });
+  }
+
+  var summary = document.getElementById("devCheckSummary");
+  if (summary) {
+    var prefix = searchValue ? "\uac80\uc0c9 \uacb0\uacfc: " : "";
+    summary.textContent = prefix + visibleGroupCount + "\uac1c Controller / " + visibleMethodCount + "\uac1c Method / " + visibleUrlCount + "\uac1c URL";
+  }
+
+  document.getElementById("noResults").style.display = visibleGroupCount === 0 ? "block" : "none";
+  updateExpandAllBtn();
+}
+
+function devCheckSearchWithHash() {
+  if (location.hash !== "") {
+    document.getElementById("devCheckSearchInput").value = decodeURIComponent(location.hash.substring(1));
+    devCheckSearch();
+  }
+}
+
+window.onload = async function() {
+  var response = await fetch("devCheckInfoList", {
+    method: "GET",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" }
+  });
+  if (response.status !== 200) {
+    alert("devCheckInfo \ubaa9\ub85d \ud638\ucd9c\uc5d0 \uc5d0\ub7ec\uac00 \ubc1c\uc0dd\ud558\uc600\uc2b5\ub2c8\ub2e4.");
+    return;
+  }
+  displayDevCheckInfoList(await response.json());
+  devCheckSearchWithHash();
+};
+window.onhashchange = function() { devCheckSearchWithHash(); };
 </script>
 </head>
 <body>
 <div class="devcheck-container">
-	<h2>DevCheckController List</h2>
-	
-	<div>
-		<a href="util">Go to Util static method List</a>
-	</div>
-	
-	
-	<input type="text" id="devCheckSearchInput" autofocus class="devcheck-search" onkeyup="devCheckSearch()" placeholder="Enter what you want to search for." />
-	
-	<ul id="devCheckInfoList">
-		<li class="thead">
-			<span class="bean-name">Controller</span>
-			<span class="url">Link</span>
-		</li>
-	</ul>
+  <h2>DevCheckController List</h2>
+  <div class="devcheck-nav">
+    <a href="util">Go to Util static method List</a>
+    <button id="expandAllBtn" class="expand-all-btn" onclick="expandAll()">&#xBAA8;&#xB450; &#xD3BC;&#xCE58;&#xAE30;</button>
+  </div>
+  <label for="devCheckSearchInput" class="sr-only">&#xAC80;&#xC0C9;</label>
+  <input type="text" id="devCheckSearchInput" autofocus class="devcheck-search" onkeyup="devCheckSearch()" placeholder="Enter what you want to search for." />
+  <div id="devCheckSummary" class="devcheck-summary"></div>
+  <div class="devcheck-table">
+    <div class="devcheck-row devcheck-head">
+      <div class="col-ctrl">Controller</div>
+      <div class="col-method">Method</div>
+      <div class="col-url">URL</div>
+    </div>
+    <div id="devCheckInfoList"></div>
+  </div>
+  <div id="noResults" class="no-results">&#xAC80;&#xC0C9; &#xACB0;&#xACFC;&#xAC00; &#xC5C6;&#xC2B5;&#xB2C8;&#xB2E4;.</div>
 </div>
 </body>
 </html>

@@ -73,6 +73,7 @@ public class DevCheckInfoWebFluxService {
 		var handlerMethod = handlerMethodMap.getValue();
 		
 		String beanName = handlerMethod.getBean().toString();
+		String method = handlerMethod.getMethod().getName();
 		List<String> urlList = new ArrayList<>();
 		var patternsCondition = requestMappingInfo.getPatternsCondition();
 		for (PathPattern pathPattern : patternsCondition.getPatterns()) {
@@ -87,7 +88,7 @@ public class DevCheckInfoWebFluxService {
 		var devCheckProperties = exchange.getApplicationContext().getBean(DevCheckProperties.class);
 		DevCheckUtil.sortUrlList(urlList, devCheckProperties.getPathPrefixes(), exchange.getRequest().getURI().getPath());
 		
-		return new DevCheckInfo(beanName, urlList, description);
+		return new DevCheckInfo(beanName, method, urlList, description);
 	}
 	
 	public String getUrlWithParameter(String pattern, Method method) {

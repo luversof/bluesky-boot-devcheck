@@ -67,25 +67,21 @@ h2 { margin: 0; padding: 10px 10px 20px 10px; font-size: 30px; letter-spacing: -
   display: none; padding: 40px 10px; text-align: center;
   color: #999; font-size: 14px; border-top: 1px solid #eaecef;
 }
-  .fav-btn { margin-right: 0px; border: none; background: none; font-size: 14px; cursor: pointer; color: #c0c0c0; }
+
+/* Favorites (consolidated) */
+.fav-btn { margin-right: 0px; border: none; background: none; font-size: 14px; cursor: pointer; color: #c0c0c0; }
 .fav-btn.favorited { color: #ffb400; }
-  .method-line { display: inline-flex; align-items: center; gap: 0px; }
-.fav-item { display: inline-flex; align-items: center; gap: 6px; }
-.fav-item.dragging { opacity: 0.5; }
-.fav-handle { cursor: grab; color: #999; padding: 2px 6px; font-size: 14px; }
-  .fav-label { padding: 6px 10px; border-radius: 12px; border: 1px solid #f0f0f0; background: #fff; font-size: 13px; }
-  .fav-star { color: #f6c342; margin-right: 0px; font-size: 14px; }
-  .fav-text { color: #494949; margin-left: 4px; font-size: 13px; }
-  /* ensure fav-text inside the fav button remains dark even if the button inherits a different color */
-  .expand-all-btn.fav-label .fav-text { color: #494949 !important; }
-  /* ensure fav-text inside the fav button is visible and truncates if too long */
-  .expand-all-btn.fav-label .fav-text { display: inline-block; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
-  .fav-handle { margin-left: 6px; }
-#favoritesBar { padding: 8px 0; display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.method-line { display: inline-flex; align-items: center; gap: 0px; }
 .fav-item { display: inline-flex; align-items: center; gap: 6px; padding: 2px; }
+.fav-item.dragging { opacity: 0.5; }
+.fav-label { padding: 6px 10px; border-radius: 12px; border: 1px solid #f0f0f0; background: #fff; font-size: 13px; }
+.fav-star { color: #f6c342; margin-right: 0px; font-size: 14px; }
+.fav-text { color: #494949; margin-left: 4px; font-size: 13px; }
+.expand-all-btn.fav-label .fav-text { color: #494949 !important; display: inline-block; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.fav-handle { cursor: grab; color: #999; padding: 2px 6px; font-size: 14px; margin-left: 6px; }
+#favoritesBar { padding: 8px 0; display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
 .fav-delete { border: none; background: #fff; color: #d23b3b; cursor: pointer; font-size: 13px; padding: 2px 6px; border-radius: 6px; border: 1px solid #f3c6c6; margin-left: 6px; opacity: 0; transition: opacity .12s; }
 .fav-item.editing .fav-delete, .fav-item:hover .fav-delete { opacity: 1; }
-.fav-delete { border: none; background: none; color: #d23b3b; cursor: pointer; font-size: 13px; padding: 0 6px; }
 </style>
 <script>
 function createGroupElement(group) {

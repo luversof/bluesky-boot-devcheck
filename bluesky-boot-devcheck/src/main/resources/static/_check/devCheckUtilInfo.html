@@ -602,6 +602,18 @@ window.onload = async function() {
   applyFavoritesUI('util');
 };
 window.onhashchange = function() { devCheckSearchWithHash(); };
+
+// Ctrl/Cmd+F -> focus search; Enter in the search box -> run search
+document.addEventListener("keydown", function(e) {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === "f" || e.key === "F")) {
+    var input = document.getElementById("devCheckSearchInput");
+    if (input) { e.preventDefault(); input.focus(); input.select(); }
+    return;
+  }
+  if (e.key === "Enter" && !e.isComposing && e.target && e.target.id === "devCheckSearchInput") {
+    e.preventDefault(); devCheckSearch();
+  }
+});
 </script>
 </head>
 <body>

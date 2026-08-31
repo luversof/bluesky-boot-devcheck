@@ -77,6 +77,7 @@ h2 { margin: 0; padding: 10px 10px 20px 10px; font-size: 30px; letter-spacing: -
 /* URL */
 .url-item { display: block; font-size: 13px; padding: 1px 0; }
 .url-item.url-hidden { display: none; }
+.url-raw { margin-left: 8px; font-size: 11px; color: #b0b0b0; white-space: nowrap; }
 .devcheck-more-btn {
   display: inline-block; margin-top: 4px;
   background: none; border: none; padding: 0;
@@ -214,12 +215,26 @@ function createGroupElement(group) {
     var mc3 = document.createElement("div");
     mc3.className = "col-url";
     methodInfo.urls.forEach(function(url, idx) {
+      var row = document.createElement("div");
+      row.className = "url-item" + (idx >= URL_PREVIEW_COUNT ? " url-hidden" : "");
+
+      // 기본: 트리 뷰어(jsonView)
       var a = document.createElement("a");
-      a.className = "url-item" + (idx >= URL_PREVIEW_COUNT ? " url-hidden" : "");
-      a.href = url;
+      a.href = "jsonView?url=" + encodeURIComponent(url);
       a.target = "_blank";
       a.textContent = url;
-      mc3.appendChild(a);
+      row.appendChild(a);
+
+      // 옆에: 원본(raw) JSON 직접 열기
+      var raw = document.createElement("a");
+      raw.className = "url-raw";
+      raw.href = url;
+      raw.target = "_blank";
+      raw.textContent = "원본 ↗";
+      raw.title = "원본 JSON (raw)";
+      row.appendChild(raw);
+
+      mc3.appendChild(row);
     });
     if (methodInfo.urls.length > URL_PREVIEW_COUNT) {
       var moreBtn = document.createElement("button");
@@ -717,6 +732,18 @@ window.onload = async function() {
   applyFavoritesUI('controller');
 };
 window.onhashchange = function() { devCheckSearchWithHash(); };
+
+// Ctrl/Cmd+F -> focus search; Enter in the search box -> run search
+document.addEventListener("keydown", function(e) {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === "f" || e.key === "F")) {
+    var input = document.getElementById("devCheckSearchInput");
+    if (input) { e.preventDefault(); input.focus(); input.select(); }
+    return;
+  }
+  if (e.key === "Enter" && !e.isComposing && e.target && e.target.id === "devCheckSearchInput") {
+    e.preventDefault(); devCheckSearch();
+  }
+});
 </script>
 </head>
 <body>

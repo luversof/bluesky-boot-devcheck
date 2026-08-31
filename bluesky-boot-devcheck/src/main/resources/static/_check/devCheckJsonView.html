@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>DevCheck JSON Viewer</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; color: #494949; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.jv-container { min-width: 720px; padding: 15px; }
+h2 { margin: 0; padding: 10px 10px 14px 10px; font-size: 30px; letter-spacing: -1.2px; color: #1f1f1f; font-weight: normal; }
+
+/* nav / buttons */
+.jv-nav { padding: 4px 0 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.jv-btn { padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: none; cursor: pointer; color: #494949; }
+.jv-btn:hover { background: #f4f5f7; }
+.jv-btn.active { background: #e8f0fe; border-color: #b5cbf5; color: #3466c8; font-weight: bold; }
+
+/* url bar */
+.jv-urlbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.jv-urlbar input { flex: 1; font-size: 13px; padding: 9px 12px; border: 1px solid #ddd; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #494949; }
+.jv-urlbar a.jv-raw-open { font-size: 12px; color: #3466c8; text-decoration: none; white-space: nowrap; }
+.jv-urlbar a.jv-raw-open:hover { text-decoration: underline; color: #ff5f3c; }
+
+/* search */
+.jv-searchrow { display: flex; gap: 8px; align-items: stretch; margin-bottom: 10px; }
+.jv-search {
+  flex: 1; width: 100%; font-size: 15px;
+  padding: 11px 20px 11px 40px;
+  border: 1px solid #ddd; border-radius: 4px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 12px 50%;
+  background-size: 18px auto;
+}
+.jv-help-btn { flex-shrink: 0; width: 38px; border: 1px solid #ddd; border-radius: 4px; background: #fafbfc; color: #666; font-size: 16px; font-weight: bold; cursor: pointer; }
+.jv-help-btn:hover, .jv-help-btn.active { background: #e8f0fe; border-color: #b5cbf5; color: #3466c8; }
+.jv-help { border: 1px solid #eaecef; border-radius: 4px; background: #fafbfc; padding: 12px 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.7; }
+.jv-help h4 { margin: 0 0 8px; font-size: 13px; color: #1f1f1f; }
+.jv-help code { background: #eef1f5; border-radius: 3px; padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; color: #3466c8; }
+.jv-help dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; align-items: baseline; }
+.jv-help dt { white-space: nowrap; }
+.jv-help dd { margin: 0; color: #666; }
+.jv-help .jv-examples { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.jv-help .jv-ex-label { color: #999; font-size: 12px; }
+.jv-help .jv-ex { border: 1px solid #d0d7de; border-radius: 12px; background: #fff; padding: 3px 10px; font-size: 12px; color: #3466c8; cursor: pointer; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.jv-help .jv-ex:hover { background: #e8f0fe; }
+.jv-help .jv-note { margin-top: 10px; color: #999; font-size: 12px; }
+
+.jv-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.jv-summary { font-size: 12px; color: #999; margin-left: auto; }
+
+/* path bar */
+.jv-pathbar { display: none; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 10px; background: #fafbfc; border: 1px solid #eaecef; border-radius: 4px; }
+.jv-pathbar.show { display: flex; }
+.jv-pathbar .jv-path-text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; color: #3466c8; word-break: break-all; }
+.jv-pathbar .jv-copy-path { border: 1px solid #ccc; background: #fff; border-radius: 4px; font-size: 12px; padding: 3px 8px; cursor: pointer; color: #494949; white-space: nowrap; }
+.jv-pathbar .jv-copy-path:hover { background: #f4f5f7; }
+
+/* panels */
+.jv-panel { display: none; }
+.jv-panel.active { display: block; }
+
+/* virtualized tree: only the rows in view exist in the DOM */
+.jv-scroll {
+  height: calc(100vh - 320px); min-height: 320px; overflow: auto;
+  border-top: 5px solid #f4f5f7; border-bottom: 1px solid #f4f5f7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px;
+}
+.jv-spacer { position: relative; width: 100%; }
+.jv-rows { position: absolute; left: 0; right: 0; top: 0; will-change: transform; }
+.jv-row { height: 22px; line-height: 22px; display: flex; align-items: center; gap: 2px; white-space: nowrap; padding-right: 10px; cursor: default; }
+.jv-row:hover { background: #f8f9fa; }
+.jv-row.selected { background: #fff4ec; }
+.jv-toggle { flex-shrink: 0; width: 14px; color: #aaa; font-size: 10px; cursor: pointer; text-align: center; user-select: none; }
+.jv-key { color: #3466c8; }
+.jv-colon { color: #999; }
+.jv-preview { color: #b0b0b0; font-size: 12px; }
+.jv-value { overflow: hidden; text-overflow: ellipsis; }
+.jv-string { color: #0a7d33; }
+.jv-number { color: #b5330a; }
+.jv-boolean { color: #8250df; }
+.jv-null { color: #aaa; font-style: italic; }
+mark { background: #ffe58f; color: inherit; border-radius: 2px; }
+
+/* raw */
+#jvRaw { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.5;
+  white-space: pre; overflow: auto; max-height: calc(100vh - 300px);
+  background: #fafbfc; border: 1px solid #eaecef; border-radius: 4px; padding: 14px; margin: 0; }
+
+.jv-message { padding: 30px 10px; color: #999; font-size: 14px; white-space: pre-wrap; }
+.jv-message.error { color: #d23b3b; }
+.jv-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 16px; border-radius: 4px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
+.jv-toast.show { opacity: 0.95; }
+</style>
+</head>
+<body>
+<div class="jv-container">
+  <h2>DevCheck JSON Viewer</h2>
+
+  <div class="jv-nav">
+    <button class="jv-btn" onclick="location.href='index'">⬅ Controller List</button>
+    <button id="tabTree" class="jv-btn active" onclick="switchTab('tree')">🌳 Tree</button>
+    <button id="tabRaw" class="jv-btn" onclick="switchTab('raw')">{ } Raw JSON</button>
+  </div>
+
+  <div class="jv-urlbar">
+    <input type="text" id="jvUrl" placeholder="/_check/... endpoint URL" onkeydown="if(event.key==='Enter') reloadUrl()" />
+    <button class="jv-btn" onclick="reloadUrl()">조회</button>
+    <a id="jvRawOpen" class="jv-raw-open" href="#" target="_blank" rel="noopener">원본 새 탭 ↗</a>
+  </div>
+
+  <!-- Tree panel -->
+  <div id="panelTree" class="jv-panel active">
+    <div class="jv-searchrow">
+      <input type="text" id="jvSearch" class="jv-search" placeholder="검색 — 예: crypto · moduleName:crypto · modules &gt;&gt; lin · datasources &gt; url:jdbc" onkeyup="scheduleSearch()" />
+      <button type="button" id="jvHelpBtn" class="jv-help-btn" onclick="toggleHelp()" title="검색 문법 도움말" aria-label="검색 문법 도움말">?</button>
+    </div>
+    <div id="jvHelp" class="jv-help" hidden>
+      <h4>검색 문법</h4>
+      <dl>
+        <dt><code>foo</code></dt>
+        <dd>키 또는 값에 <b>foo</b>가 포함된 항목 (대소문자 무시)</dd>
+        <dt><code>key:value</code></dt>
+        <dd>키에 <b>key</b>가, 값에 <b>value</b>가 <b>포함</b>된 항목(부분 일치). 공백·따옴표는 무시 — <code>moduleName : "crypto"</code> = <code>moduleName:crypto</code></dd>
+        <dt><code>key:</code></dt>
+        <dd>값은 보지 않고 <b>키만</b> 검색 (뒤에 콜론만) — <code>lin:</code></dd>
+        <dt><code>A &gt; B</code></dt>
+        <dd>A에 해당하는 항목 <b>아래 전체</b>에서 B를 찾음(깊이 무관). 여러 단계도 가능 — <code>A &gt; B &gt; C:D</code></dd>
+        <dt><code>A &gt;&gt; B</code></dt>
+        <dd>A <b>바로 아래(직계)</b> 항목만 대상 — <code>modules &gt;&gt; lin</code> = modules의 자식 키 중 lin 포함</dd>
+      </dl>
+      <div class="jv-examples">
+        <span class="jv-ex-label">예시(클릭):</span>
+        <button type="button" class="jv-ex" onclick="applyExample('crypto')">crypto</button>
+        <button type="button" class="jv-ex" onclick="applyExample('moduleName:crypto')">moduleName:crypto</button>
+        <button type="button" class="jv-ex" onclick="applyExample('modules >> lin')">modules &gt;&gt; lin</button>
+        <button type="button" class="jv-ex" onclick="applyExample('datasources > url:jdbc')">datasources &gt; url:jdbc</button>
+      </div>
+      <div class="jv-note">검색 중 <b>⊞ 결과 하위 펼치기</b>를 누르면 매칭된 항목의 하위 전체를 펼쳐볼 수 있습니다. <b>Ctrl+F</b>로 검색창 이동, <b>Enter</b>로 즉시 검색.</div>
+    </div>
+    <div class="jv-toolbar">
+      <button id="jvExpandAll" class="jv-btn" onclick="toggleExpandAll()">▼ 모두 접기</button>
+      <button id="jvExpandResults" class="jv-btn active" onclick="toggleExpandResults()" style="display:none;">⊟ 매칭만 보기</button>
+      <span id="jvSummary" class="jv-summary"></span>
+    </div>
+    <div id="jvPathbar" class="jv-pathbar">
+      <span class="jv-path-text" id="jvPathText"></span>
+      <button class="jv-copy-path" onclick="copyPath()">경로 복사</button>
+    </div>
+    <div id="jvScroll" class="jv-scroll">
+      <div id="jvSpacer" class="jv-spacer"><div id="jvRows" class="jv-rows"></div></div>
+    </div>
+  </div>
+
+  <!-- Raw panel -->
+  <div id="panelRaw" class="jv-panel">
+    <div class="jv-toolbar">
+      <button class="jv-btn" onclick="copyRaw()">📋 JSON 복사</button>
+      <span id="jvRawSummary" class="jv-summary"></span>
+    </div>
+    <pre id="jvRaw"></pre>
+  </div>
+
+  <div id="jvMessage" class="jv-message" style="display:none;"></div>
+</div>
+<div id="jvToast" class="jv-toast"></div>
+
+<script>
+/* The tree is kept as a plain data model and only the rows currently scrolled
+   into view are turned into DOM elements. Large payloads (100k+ nodes) stay
+   responsive because expanding, filtering and highlighting never touch more
+   than the ~50 visible rows. */
+var ROW_H = 22;            // must match .jv-row height
+var OVERSCAN = 12;         // rows rendered above/below the viewport
+var RAW_LIMIT = 1500000;   // chars of raw JSON rendered into <pre>
+
+var __data = null;
+var __rawText = "";
+var __rawRendered = false;
+var __roots = [];          // top-level model nodes
+var __containers = [];     // every expandable model node
+var __rows = [];           // currently visible model nodes (flattened)
+var __nodeCount = 0;
+var __selected = null;
+var __parsed = { empty: true, key: "", keyTerms: [], valTerms: [] };
+var __renderedStart = -1, __renderedEnd = -1;
+var SEARCH_EXPAND_MODE = true;   // default: reveal full sub-items of matched branches
+
+/* ---------- helpers ---------- */
+function typeOf(v) {
+  if (v === null) return "null";
+  if (Array.isArray(v)) return "array";
+  return typeof v;
+}
+function showMessage(msg, isError) {
+  var el = document.getElementById("jvMessage");
+  el.textContent = msg;
+  el.className = "jv-message" + (isError ? " error" : "");
+  el.style.display = "block";
+}
+function hideMessage() { document.getElementById("jvMessage").style.display = "none"; }
+function toast(msg) {
+  var t = document.getElementById("jvToast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t.__timer);
+  t.__timer = setTimeout(function () { t.classList.remove("show"); }, 1400);
+}
+
+/* ---------- URL / load ---------- */
+function getParam(name) {
+  var m = new RegExp("[?&]" + name + "=([^&]*)").exec(location.search);
+  return m ? decodeURIComponent(m[1].replace(/\+/g, " ")) : "";
+}
+function sameOriginUrl(u) {
+  try {
+    var parsed = new URL(u, location.origin);
+    return parsed.origin === location.origin ? parsed.href : null;
+  } catch (e) { return null; }
+}
+function reloadUrl() {
+  var u = document.getElementById("jvUrl").value.trim();
+  if (u) load(u);
+}
+
+async function load(url) {
+  hideMessage();
+  document.getElementById("jvUrl").value = url;
+  document.getElementById("jvRawOpen").href = url;
+
+  if (url.indexOf("{") !== -1) {
+    clearTree();
+    showMessage("이 URL에는 채워야 할 파라미터(예: {id})가 있습니다. 위 주소창에서 값을 채운 뒤 [조회]를 누르세요.", false);
+    return;
+  }
+  var safe = sameOriginUrl(url);
+  if (!safe) { showMessage("동일 출처(same-origin) URL만 조회할 수 있습니다: " + url, true); return; }
+
+  clearTree();
+  showMessage("불러오는 중…", false);
+  try {
+    var res = await fetch(safe, { headers: { "Accept": "application/json" } });
+    var text = await res.text();
+    if (!res.ok) { showMessage("요청 실패 (HTTP " + res.status + ")\n\n" + text, true); return; }
+    var data;
+    try { data = JSON.parse(text); }
+    catch (e) { showMessage("응답이 JSON 형식이 아닙니다.\n\n" + text, true); return; }
+    hideMessage();
+    __data = data;
+    __rawText = JSON.stringify(data, null, 2);
+    __rawRendered = false;
+    document.getElementById("jvRawSummary").textContent = __rawText.length.toLocaleString() + " chars";
+    buildModel();
+    doSearch();                       // applies ?q= too; renders the visible rows
+    if (document.getElementById("panelRaw").classList.contains("active")) renderRaw();
+  } catch (e) {
+    showMessage("네트워크 오류: " + e, true);
+  }
+}
+
+function clearTree() {
+  __roots = []; __containers = []; __rows = []; __nodeCount = 0; __selected = null;
+  __renderedStart = -1; __renderedEnd = -1;
+  document.getElementById("jvRows").innerHTML = "";
+  document.getElementById("jvSpacer").style.height = "0px";
+  document.getElementById("jvPathbar").classList.remove("show");
+  updateSummary();
+}
+
+/* ---------- Raw (rendered lazily: a multi-MB <pre> is slow to paint) ---------- */
+function renderRaw() {
+  if (__rawRendered) return;
+  var pre = document.getElementById("jvRaw");
+  if (__rawText.length > RAW_LIMIT) {
+    pre.textContent = __rawText.slice(0, RAW_LIMIT) +
+      "\n\n… 너무 커서 앞부분만 표시했습니다 (전체는 [JSON 복사] 또는 [원본 새 탭]으로 확인).";
+  } else {
+    pre.textContent = __rawText;
+  }
+  document.getElementById("jvRawSummary").textContent = __rawText.length.toLocaleString() + " chars";
+  __rawRendered = true;
+}
+async function copyRaw() {
+  try { await navigator.clipboard.writeText(__rawText); toast("JSON 복사됨"); }
+  catch (e) {
+    var ta = document.createElement("textarea"); ta.value = __rawText; document.body.appendChild(ta);
+    ta.select(); try { document.execCommand("copy"); toast("JSON 복사됨"); } catch (err) {} ta.remove();
+  }
+}
+
+/* ---------- model ---------- */
+function buildModel() {
+  __roots = []; __containers = []; __nodeCount = 0; __selected = null;
+  var t = typeOf(__data);
+  if (t === "object" || t === "array") {
+    var entries = entriesOf(__data, t);
+    if (!entries.length) __roots.push(makeNode(t === "array" ? "(empty array)" : "(empty object)", __data, "", 0));
+    else entries.forEach(function (e) { __roots.push(makeNode(e[0], e[1], e[0], 0)); });
+  } else {
+    __roots.push(makeNode("(value)", __data, "", 0));
+  }
+}
+
+function entriesOf(value, t) {
+  if (t === "array") {
+    var out = new Array(value.length);
+    for (var i = 0; i < value.length; i++) out[i] = [String(i), value[i]];
+    return out;
+  }
+  var keys = Object.keys(value), res = new Array(keys.length);
+  for (var k = 0; k < keys.length; k++) res[k] = [keys[k], value[keys[k]]];
+  return res;
+}
+
+function makeNode(key, value, path, depth) {
+  __nodeCount++;
+  var t = typeOf(value);
+  var isContainer = (t === "object" || t === "array");
+  var node = {
+    key: key, path: path, depth: depth, type: t,
+    isContainer: isContainer, count: 0, display: "",
+    selfKey: key.toLowerCase(), selfVal: "", self: "",
+    children: null, expanded: true, hidden: false
+  };
+  if (isContainer) {
+    var entries = entriesOf(value, t);
+    node.count = entries.length;
+    node.display = (t === "array" ? "[ ] " : "{ } ") + entries.length;
+    node.self = node.selfKey;
+    node.children = new Array(entries.length);
+    for (var i = 0; i < entries.length; i++) {
+      node.children[i] = makeNode(entries[i][0], entries[i][1], path ? (path + "." + entries[i][0]) : entries[i][0], depth + 1);
+    }
+    if (entries.length > 0) __containers.push(node);
+  } else {
+    node.display = (t === "string") ? JSON.stringify(value) : String(value);
+    node.selfVal = (t === "string" ? value : String(value)).toLowerCase();
+    node.self = node.selfKey + " " + node.display.toLowerCase();
+  }
+  return node;
+}
+
+/* ---------- search ---------- */
+var __searchTimer = null;
+function scheduleSearch() { clearTimeout(__searchTimer); __searchTimer = setTimeout(doSearch, 180); }
+
+function doSearch() {
+  clearTimeout(__searchTimer);
+  var raw = document.getElementById("jvSearch").value;
+  __parsed = parseQuery(raw);
+  var matches = 0;
+  for (var i = 0; i < __roots.length; i++) matches += filterNode(__roots[i], __parsed, false, 0, false);
+
+  var resBtn = document.getElementById("jvExpandResults");
+  resBtn.style.display = __parsed.empty ? "none" : "";
+
+  flattenRows();
+  renderRows(true);
+  updateSummary(__parsed.empty ? undefined : matches);
+  updateExpandAllBtn();
+  updateUrlQuery(raw.trim());
+}
+
+// Reflect the current search into the URL (?...&q=) so it can be copied/shared.
+function updateUrlQuery(q) {
+  try {
+    var params = new URLSearchParams(location.search);
+    if (q) params.set("q", q); else params.delete("q");
+    var qs = params.toString();
+    history.replaceState(null, "", location.pathname + (qs ? "?" + qs : "") + location.hash);
+  } catch (e) { /* restricted origin (file:// preview): ignore */ }
+}
+
+// "A > B"  = B somewhere under A (any depth)
+// "A >> B" = B directly under A (immediate children only)
+function parseQuery(raw) {
+  var q = (raw || "").toLowerCase().trim();
+  var none = { empty: true, key: "", keyTerms: [], valTerms: [] };
+  if (!q) return none;
+
+  var parts = q.split(/(>>|>)/);          // keeps the separators
+  var segments = [], pendingDirect = false;
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i];
+    if (p === ">" || p === ">>") { pendingDirect = (p === ">>"); continue; }
+    var text = p.trim();
+    if (!text) continue;
+    var seg = parseCondition(text);
+    seg.direct = segments.length > 0 && pendingDirect;   // meaningless on the first segment
+    segments.push(seg);
+    pendingDirect = false;
+  }
+  if (!segments.length) return none;
+
+  var keyTerms = [], valTerms = [];
+  segments.forEach(function (c) {
+    if (c.structured) { if (c.keyQ) keyTerms.push(c.keyQ); if (c.valQ) valTerms.push(c.valQ); }
+    else { keyTerms.push(c.term); valTerms.push(c.term); }
+  });
+  return { empty: false, segments: segments, key: q, keyTerms: keyTerms, valTerms: valTerms };
+}
+
+function parseCondition(seg) {
+  var cond = { term: seg, structured: false };
+  var ci = seg.indexOf(":");
+  if (ci !== -1) {
+    var keyQ = seg.slice(0, ci).trim();
+    var valQ = seg.slice(ci + 1).trim().replace(/^["']|["']$/g, "").trim();
+    if (keyQ || valQ) { cond.structured = true; cond.keyQ = keyQ; cond.valQ = valQ; }
+  }
+  return cond;
+}
+
+function condMatch(node, cond) {
+  if (node.self.indexOf(cond.term) !== -1) return true;      // plain substring on key+value
+  if (!cond.structured) return false;
+  if (node.isContainer) {                                     // containers have no value
+    return !!cond.keyQ && !cond.valQ && node.selfKey.indexOf(cond.keyQ) !== -1;
+  }
+  var kOk = !cond.keyQ || node.selfKey.indexOf(cond.keyQ) !== -1;
+  var vOk = !cond.valQ || node.selfVal.indexOf(cond.valQ) !== -1;
+  return (cond.keyQ || cond.valQ) && kOk && vOk;
+}
+
+// segIdx  = how many leading conditions the ancestors already satisfied.
+// directOk = this node is an immediate child of the node that satisfied segIdx-1
+//            (only relevant for ">>" segments, which must not match deeper).
+function filterNode(node, parsed, forceShow, segIdx, directOk) {
+  var q = !parsed.empty;
+  var selfMatch = false, childSegIdx = segIdx, childDirectOk = false;
+  if (q) {
+    var segs = parsed.segments, last = segs.length - 1, seg = segs[segIdx];
+    if (!seg.direct || directOk) {                       // ">>" only applies one level down
+      if (segIdx === last) selfMatch = condMatch(node, seg);
+      else if (condMatch(node, seg)) { childSegIdx = segIdx + 1; childDirectOk = true; }
+    }
+  }
+
+  if (!node.isContainer) {
+    node.hidden = !(!q || forceShow || selfMatch);
+    return selfMatch ? 1 : 0;
+  }
+
+  // Only a MATCHED node opens up its own subtree, and only in "결과 하위 펼치기" mode.
+  // (Ancestors on the path to a match must not drag their other children into view.)
+  var childForce = forceShow || (selfMatch && SEARCH_EXPAND_MODE);
+  var childMatches = 0;
+  for (var i = 0; i < node.children.length; i++) {
+    childMatches += filterNode(node.children[i], parsed, childForce, childSegIdx, childDirectOk);
+  }
+  var hasDescendantMatch = childMatches > 0;
+  node.hidden = !(!q || forceShow || selfMatch || hasDescendantMatch);
+  node.expanded = true;                               // everything still visible stays open
+
+  return childMatches + (selfMatch ? 1 : 0);
+}
+
+function toggleExpandResults() {
+  SEARCH_EXPAND_MODE = !SEARCH_EXPAND_MODE;
+  var btn = document.getElementById("jvExpandResults");
+  btn.textContent = SEARCH_EXPAND_MODE ? "⊟ 매칭만 보기" : "⊞ 결과 하위 펼치기";
+  btn.classList.toggle("active", SEARCH_EXPAND_MODE);
+  doSearch();
+}
+
+/* ---------- flatten + virtualized rendering ---------- */
+function flattenRows() {
+  var rows = [];
+  function push(n) {
+    if (n.hidden) return;
+    rows.push(n);
+    if (n.isContainer && n.expanded && n.count > 0) {
+      for (var i = 0; i < n.children.length; i++) push(n.children[i]);
+    }
+  }
+  for (var i = 0; i < __roots.length; i++) push(__roots[i]);
+  __rows = rows;
+  document.getElementById("jvSpacer").style.height = (rows.length * ROW_H) + "px";
+}
+
+function renderRows(force) {
+  var scroll = document.getElementById("jvScroll");
+  var total = __rows.length;
+  var start = Math.max(0, Math.floor(scroll.scrollTop / ROW_H) - OVERSCAN);
+  var visible = Math.ceil(scroll.clientHeight / ROW_H) + OVERSCAN * 2;
+  var end = Math.min(total, start + visible);
+  if (!force && start === __renderedStart && end === __renderedEnd) return;
+  __renderedStart = start; __renderedEnd = end;
+
+  var host = document.getElementById("jvRows");
+  var frag = document.createDocumentFragment();
+  for (var i = start; i < end; i++) frag.appendChild(buildRow(__rows[i], i));
+  host.innerHTML = "";
+  host.style.transform = "translateY(" + (start * ROW_H) + "px)";
+  host.appendChild(frag);
+}
+
+function buildRow(node, index) {
+  var row = document.createElement("div");
+  row.className = "jv-row" + (node === __selected ? " selected" : "");
+  row.style.paddingLeft = (node.depth * 18 + 4) + "px";
+  row.__node = node;
+
+  var toggle = document.createElement("span");
+  toggle.className = "jv-toggle";
+  if (node.isContainer && node.count > 0) toggle.textContent = node.expanded ? "▼" : "▶";
+  row.appendChild(toggle);
+
+  var key = document.createElement("span");
+  key.className = "jv-key";
+  appendMarked(key, node.key, __parsed.keyTerms);
+  row.appendChild(key);
+
+  var colon = document.createElement("span");
+  colon.className = "jv-colon";
+  colon.textContent = ": ";
+  row.appendChild(colon);
+
+  if (node.isContainer) {
+    var preview = document.createElement("span");
+    preview.className = "jv-preview";
+    preview.textContent = node.display;
+    row.appendChild(preview);
+  } else {
+    var val = document.createElement("span");
+    val.className = "jv-value jv-" + node.type;
+    appendMarked(val, node.display, __parsed.valTerms);
+    row.appendChild(val);
+  }
+  return row;
+}
+
+// Write text into span, wrapping every occurrence of any term in <mark>.
+function appendMarked(span, text, terms) {
+  if (!terms || !terms.length) { span.textContent = text; return; }
+  var low = text.toLowerCase(), ranges = [];
+  for (var t = 0; t < terms.length; t++) {
+    var term = terms[t], i = 0, idx;
+    while ((idx = low.indexOf(term, i)) !== -1) { ranges.push([idx, idx + term.length]); i = idx + term.length; }
+  }
+  if (!ranges.length) { span.textContent = text; return; }
+  ranges.sort(function (a, b) { return a[0] - b[0]; });
+  var merged = [ranges[0].slice()];
+  for (var r = 1; r < ranges.length; r++) {
+    var last = merged[merged.length - 1];
+    if (ranges[r][0] <= last[1]) last[1] = Math.max(last[1], ranges[r][1]);
+    else merged.push(ranges[r].slice());
+  }
+  var pos = 0;
+  for (var m = 0; m < merged.length; m++) {
+    if (merged[m][0] > pos) span.appendChild(document.createTextNode(text.slice(pos, merged[m][0])));
+    var mk = document.createElement("mark");
+    mk.textContent = text.slice(merged[m][0], merged[m][1]);
+    span.appendChild(mk);
+    pos = merged[m][1];
+  }
+  if (pos < text.length) span.appendChild(document.createTextNode(text.slice(pos)));
+}
+
+/* ---------- interaction ---------- */
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("jvScroll").addEventListener("scroll", function () { renderRows(false); }, { passive: true });
+  document.getElementById("jvRows").addEventListener("click", function (e) {
+    var row = e.target.closest(".jv-row");
+    if (!row || !row.__node) return;
+    selectNode(row.__node);
+    if (row.__node.isContainer && row.__node.count > 0) toggleNode(row.__node);
+    else renderRows(true);
+  });
+});
+
+function toggleNode(node) {
+  node.expanded = !node.expanded;
+  flattenRows();
+  renderRows(true);
+  updateExpandAllBtn();
+}
+
+function selectNode(node) {
+  __selected = node;
+  document.getElementById("jvPathText").textContent = node.path || "(root)";
+  document.getElementById("jvPathbar").classList.add("show");
+}
+
+async function copyPath() {
+  var p = document.getElementById("jvPathText").textContent;
+  try { await navigator.clipboard.writeText(p); toast("경로 복사됨: " + p); }
+  catch (e) { toast("복사 실패"); }
+}
+
+function toggleExpandAll() {
+  var allOpen = __containers.length > 0 && __containers.every(function (n) { return n.expanded; });
+  for (var i = 0; i < __containers.length; i++) __containers[i].expanded = !allOpen;
+  flattenRows();
+  renderRows(true);
+  updateExpandAllBtn();
+}
+
+function updateExpandAllBtn() {
+  var btn = document.getElementById("jvExpandAll");
+  var allOpen = __containers.length > 0 && __containers.every(function (n) { return n.expanded; });
+  btn.textContent = allOpen ? "▼ 모두 접기" : "▶ 모두 펼치기";
+}
+
+function updateSummary(visibleCount) {
+  var el = document.getElementById("jvSummary");
+  if (visibleCount === undefined) el.textContent = __nodeCount.toLocaleString() + " nodes";
+  else el.textContent = "검색 결과: " + visibleCount.toLocaleString() + " / " + __nodeCount.toLocaleString() + " nodes";
+}
+
+/* ---------- tabs / help ---------- */
+function switchTab(which) {
+  var tree = which === "tree";
+  document.getElementById("tabTree").classList.toggle("active", tree);
+  document.getElementById("tabRaw").classList.toggle("active", !tree);
+  document.getElementById("panelTree").classList.toggle("active", tree);
+  document.getElementById("panelRaw").classList.toggle("active", !tree);
+  if (tree) renderRows(true); else renderRaw();
+}
+
+function toggleHelp() {
+  var h = document.getElementById("jvHelp");
+  var b = document.getElementById("jvHelpBtn");
+  var show = h.hasAttribute("hidden");
+  if (show) h.removeAttribute("hidden"); else h.setAttribute("hidden", "");
+  b.classList.toggle("active", show);
+  renderRows(true);
+}
+function applyExample(q) {
+  var input = document.getElementById("jvSearch");
+  input.value = q;
+  doSearch();
+  input.focus();
+}
+
+/* ---------- keyboard ---------- */
+// Ctrl/Cmd+F -> focus search; Enter in the search box -> run search now
+document.addEventListener("keydown", function (e) {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === "f" || e.key === "F")) {
+    var input = document.getElementById("jvSearch");
+    if (input) { e.preventDefault(); input.focus(); input.select(); }
+    return;
+  }
+  if (e.key === "Enter" && !e.isComposing && e.target && e.target.id === "jvSearch") {
+    e.preventDefault(); doSearch();
+  }
+});
+
+window.addEventListener("resize", function () { renderRows(true); });
+
+/* ---------- init ---------- */
+window.onload = function () {
+  var url = getParam("url");
+  var q = getParam("q");
+  if (q) document.getElementById("jvSearch").value = q;
+  if (url) { load(url); }
+  else { showMessage("조회할 URL이 없습니다. 위 주소창에 /_check/... 엔드포인트를 입력하고 [조회]를 누르세요.", false); }
+};
+</script>
+</body>
+</html>

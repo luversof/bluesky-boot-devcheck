@@ -89,6 +89,35 @@ mark { background: #ffe58f; color: inherit; border-radius: 2px; }
 .jv-message.error { color: #d23b3b; }
 .jv-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 16px; border-radius: 4px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
 .jv-toast.show { opacity: 0.95; }
+
+/* ---- table view ---- */
+.jv-tbl-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.jv-tbl-bar select { flex: 3 1 460px; min-width: 260px; max-width: 780px; font-size: 13px; padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; color: #494949; background: #fff; }
+.jv-tbl-filter { flex: 1 1 200px; min-width: 150px; max-width: 320px; font-size: 13px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; }
+.jv-chk { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #494949; cursor: pointer; white-space: nowrap; }
+.jv-tbl-wrap { overflow: auto; max-height: calc(100vh - 300px); border: 1px solid #eaecef; border-radius: 4px; }
+table.jv-tbl { border-collapse: separate; border-spacing: 0; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; table-layout: fixed; }
+table.jv-tbl th, table.jv-tbl td { border-right: 1px solid #eef0f2; border-bottom: 1px solid #eef0f2; padding: 5px 8px; text-align: left; vertical-align: top;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+table.jv-tbl th { position: relative; }
+.jv-resizer { position: absolute; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; user-select: none; z-index: 5; }
+.jv-resizer:hover, .jv-resizer.active { background: #b5cbf5; }
+body.jv-resizing, body.jv-resizing * { cursor: col-resize !important; user-select: none !important; }
+table.jv-tbl thead th { position: sticky; top: 0; z-index: 3; background: #fafbfc; font-weight: bold; color: #1f1f1f; box-shadow: inset 0 -2px 0 #eaecef; }
+table.jv-tbl th.jv-col-mod, table.jv-tbl td.jv-col-mod { position: sticky; left: 0; z-index: 2; background: #fff; border-right: 2px solid #eaecef; font-weight: bold; color: #3466c8; }
+table.jv-tbl thead th.jv-col-mod { z-index: 4; background: #fafbfc; }
+table.jv-tbl tbody tr:hover td { background: #f8f9fa; }
+table.jv-tbl tbody tr:hover td.jv-col-mod { background: #f4f5f7; }
+table.jv-tbl tr.jv-parent-row td { background: #fffaf0; color: #8a6d3b; }
+table.jv-tbl tr.jv-parent-row td.jv-col-mod { background: #fff4e0; color: #8a6d3b; }
+table.jv-tbl td.jv-diff { background: #eaf5ff; color: #14507d; }
+table.jv-tbl tbody tr:hover td.jv-diff { background: #ddeeff; }
+table.jv-tbl td.jv-empty { color: #ccc; }
+.jv-tbl-note { font-size: 12px; color: #999; margin: 8px 2px 0; }
+.jv-legend { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #999; }
+.jv-legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+.jv-legend i.diff { background: #eaf5ff; border: 1px solid #b8dcff; }
+.jv-legend i.parent { background: #fff4e0; border: 1px solid #f0dcb8; }
 </style>
 </head>
 <body>
@@ -98,6 +127,7 @@ mark { background: #ffe58f; color: inherit; border-radius: 2px; }
   <div class="jv-nav">
     <button class="jv-btn" onclick="location.href='index'">⬅ Controller List</button>
     <button id="tabTree" class="jv-btn active" onclick="switchTab('tree')">🌳 Tree</button>
+    <button id="tabTable" class="jv-btn" onclick="switchTab('table')" style="display:none;">📊 Table</button>
     <button id="tabRaw" class="jv-btn" onclick="switchTab('raw')">{ } Raw JSON</button>
   </div>
 
@@ -157,6 +187,23 @@ mark { background: #ffe58f; color: inherit; border-radius: 2px; }
       <span id="jvRawSummary" class="jv-summary"></span>
     </div>
     <pre id="jvRaw"></pre>
+  </div>
+
+  <!-- Table panel: modules x properties matrix -->
+  <div id="panelTable" class="jv-panel">
+    <div class="jv-tbl-bar">
+      <select id="jvTblBean" onchange="renderTable()"></select>
+      <input type="text" id="jvTblFilter" class="jv-tbl-filter" placeholder="모듈명 / 값 필터" onkeyup="renderTable()" />
+      <label class="jv-chk"><input type="checkbox" id="jvTblDiffOnly" onchange="renderTable()" /> 차이나는 열만</label>
+      <label class="jv-chk"><input type="checkbox" id="jvTblParent" checked onchange="renderTable()" /> parent 행</label>
+      <button class="jv-btn" onclick="copyTableTsv()">📋 TSV 복사</button>
+    </div>
+    <div id="jvTblWrap" class="jv-tbl-wrap"></div>
+    <div class="jv-tbl-note">
+      <span class="jv-legend"><i class="parent"></i> parent(상속 기준값)</span> &nbsp;·&nbsp;
+      <span class="jv-legend"><i class="diff"></i> parent와 다른 값(재정의됨)</span> &nbsp;·&nbsp;
+      <span id="jvTblSummary"></span>
+    </div>
   </div>
 
   <div id="jvMessage" class="jv-message" style="display:none;"></div>
@@ -249,6 +296,7 @@ async function load(url) {
     __rawRendered = false;
     document.getElementById("jvRawSummary").textContent = __rawText.length.toLocaleString() + " chars";
     buildModel();
+    prepareTable();                   // module table, when the payload has a modules map
     doSearch();                       // applies ?q= too; renders the visible rows
     if (document.getElementById("panelRaw").classList.contains("active")) renderRaw();
   } catch (e) {
@@ -262,6 +310,9 @@ function clearTree() {
   document.getElementById("jvRows").innerHTML = "";
   document.getElementById("jvSpacer").style.height = "0px";
   document.getElementById("jvPathbar").classList.remove("show");
+  __beans = [];
+  document.getElementById("tabTable").style.display = "none";
+  document.getElementById("jvTblWrap").innerHTML = "";
   updateSummary();
 }
 
@@ -606,14 +657,303 @@ function updateSummary(visibleCount) {
   else el.textContent = "검색 결과: " + visibleCount.toLocaleString() + " / " + __nodeCount.toLocaleString() + " nodes";
 }
 
+/* ---------- table view ----------
+   bluesky-boot / brick module properties share one shape:
+     { "<beanName>": { parent: {...}, modules: { "<moduleName>": {...} } }, ... }
+   Modules inherit from parent and override only a few keys, so the table puts
+   modules on rows, flattened property paths on columns, and marks every cell
+   that differs from parent. */
+var __beans = [];          // [{ name, parent, modules, columns, rows }]
+var FLAT_DEPTH = 3;        // nested objects are flattened this deep, then shown as JSON
+
+function detectBeans(data) {
+  var beans = [];
+  if (!data || typeof data !== "object" || Array.isArray(data)) return beans;
+  function isMap(v) { return v && typeof v === "object" && !Array.isArray(v); }
+  // module properties carry "modules", group properties carry "groups" - same shape
+  function add(name, obj) {
+    if (!isMap(obj)) return;
+    if (isMap(obj.modules)) beans.push(buildBean(name, obj, "modules", "module"));
+    if (isMap(obj.groups)) beans.push(buildBean(name, obj, "groups", "group"));
+  }
+  if (isMap(data) && (isMap(data.modules) || isMap(data.groups))) add("(root)", data);
+  else Object.keys(data).forEach(function (k) { add(k, data[k]); });
+  return beans;
+}
+
+// value -> flat map of "a.b.c" -> display string
+function flatten(value, prefix, depth, out) {
+  out = out || {};
+  if (value === null || typeof value !== "object") {
+    out[prefix] = value === null ? "null" : String(value);
+    return out;
+  }
+  if (Array.isArray(value)) { out[prefix] = JSON.stringify(value); return out; }
+  var keys = Object.keys(value);
+  if (!keys.length) { out[prefix] = "{}"; return out; }
+  if (depth <= 0) { out[prefix] = JSON.stringify(value); return out; }
+  keys.forEach(function (k) {
+    flatten(value[k], prefix ? prefix + "." + k : k, depth - 1, out);
+  });
+  return out;
+}
+
+function buildBean(name, obj, mapKey, kind) {
+  var entries = obj[mapKey] || {};
+  var parentFlat = obj.parent ? flatten(obj.parent, "", FLAT_DEPTH) : {};
+  var rowNames = Object.keys(entries).sort();
+  var rows = rowNames.map(function (m) {
+    return { name: m, flat: flatten(entries[m], "", FLAT_DEPTH) };
+  });
+  var seen = {}, columns = [];
+  function collect(flat) {
+    Object.keys(flat).forEach(function (c) { if (!seen[c]) { seen[c] = true; columns.push(c); } });
+  }
+  rows.forEach(function (r) { collect(r.flat); });
+  collect(parentFlat);                                // parent-only keys go last
+  return { name: name, kind: kind, parentFlat: parentFlat, rows: rows, columns: columns,
+           groupPropertiesBeanName: obj.groupPropertiesBeanName || null };
+}
+
+function prepareTable() {
+  __beans = detectBeans(__data);
+  var sel = document.getElementById("jvTblBean");
+  sel.innerHTML = "";
+  __beans.forEach(function (b, i) {
+    var o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = b.name + "  (" + b.rows.length + " " + b.kind + "s × " + b.columns.length + " props)";
+    sel.appendChild(o);
+  });
+  sel.title = sel.options.length ? sel.options[sel.selectedIndex >= 0 ? sel.selectedIndex : 0].textContent : "";
+  sel.style.display = __beans.length > 1 ? "" : "none";
+  document.getElementById("tabTable").style.display = __beans.length ? "" : "none";
+  if (__beans.length) renderTable();
+}
+
+function currentBean() {
+  if (!__beans.length) return null;
+  var i = parseInt(document.getElementById("jvTblBean").value, 10);
+  return __beans[isNaN(i) ? 0 : i] || __beans[0];
+}
+
+function renderTable() {
+  var bean = currentBean();
+  var selEl = document.getElementById("jvTblBean");
+  if (selEl.options.length && selEl.selectedIndex >= 0) selEl.title = selEl.options[selEl.selectedIndex].textContent;
+  if (bean) {
+    document.getElementById("jvTblFilter").placeholder =
+      (bean.kind === "group" ? "그룹명" : "모듈명") + " / 값 필터";
+  }
+  var wrap = document.getElementById("jvTblWrap");
+  if (!bean) { wrap.innerHTML = ""; return; }
+
+  var filter = document.getElementById("jvTblFilter").value.toLowerCase().trim();
+  var diffOnly = document.getElementById("jvTblDiffOnly").checked;
+  var showParent = document.getElementById("jvTblParent").checked;
+
+  var rows = bean.rows.filter(function (r) {
+    if (!filter) return true;
+    if (r.name.toLowerCase().indexOf(filter) !== -1) return true;
+    return bean.columns.some(function (c) {
+      var v = r.flat[c];
+      return v !== undefined && v.toLowerCase().indexOf(filter) !== -1;
+    });
+  });
+
+  // a column is "interesting" when the visible modules do not all agree on it
+  var columns = bean.columns;
+  if (diffOnly) {
+    columns = columns.filter(function (c) {
+      var first, started = false;
+      for (var i = 0; i < rows.length; i++) {
+        var v = rows[i].flat[c];
+        if (!started) { first = v; started = true; }
+        else if (v !== first) return true;
+      }
+      return false;
+    });
+  }
+
+  var tbl = document.createElement("table");
+  tbl.className = "jv-tbl";
+  var thead = document.createElement("thead");
+  var htr = document.createElement("tr");
+  var modTh = th(bean.kind, "jv-col-mod");
+  applyColumnWidth(modTh, bean, null, columnTexts(bean, null, rows, showParent));
+  htr.appendChild(modTh);
+  columns.forEach(function (c) {
+    var cth = th(c, "");
+    applyColumnWidth(cth, bean, c, columnTexts(bean, c, rows, showParent));
+    htr.appendChild(cth);
+  });
+  thead.appendChild(htr);
+  tbl.appendChild(thead);
+
+  var tbody = document.createElement("tbody");
+  if (showParent && Object.keys(bean.parentFlat).length) {
+    var ptr = document.createElement("tr");
+    ptr.className = "jv-parent-row";
+    ptr.appendChild(td("parent", "jv-col-mod"));
+    columns.forEach(function (c) { ptr.appendChild(td(bean.parentFlat[c], "")); });
+    tbody.appendChild(ptr);
+  }
+  rows.forEach(function (r) {
+    var tr = document.createElement("tr");
+    tr.appendChild(td(r.name, "jv-col-mod"));
+    columns.forEach(function (c) {
+      var v = r.flat[c];
+      var differs = Object.keys(bean.parentFlat).length > 0 && v !== bean.parentFlat[c];
+      tr.appendChild(td(v, differs ? "jv-diff" : ""));
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+
+  wrap.innerHTML = "";
+  wrap.appendChild(tbl);
+  syncTableWidth();
+
+  var hidden = bean.columns.length - columns.length;
+  document.getElementById("jvTblSummary").textContent =
+    rows.length + " / " + bean.rows.length + " " + bean.kind + "s · " + columns.length + " cols" +
+    (hidden > 0 ? " (동일한 " + hidden + "개 열 숨김)" : "") +
+    (bean.groupPropertiesBeanName ? " · group: " + bean.groupPropertiesBeanName : "");
+}
+
+/* column widths: drag the header edge to resize, double-click it to auto-fit.
+   Kept per bean+column so filtering/toggling does not reset them. */
+var __colWidths = {};
+var MIN_COL_W = 56, MAX_AUTO_W = 360;
+
+// With table-layout:fixed the table needs an explicit width, or the browser
+// stretches columns to fill the container and ignores the per-column widths.
+function syncTableWidth() {
+  var tbl = document.querySelector("#jvTblWrap table");
+  if (!tbl) return;
+  var total = 0;
+  tbl.querySelectorAll("thead th").forEach(function (th) {
+    total += parseFloat(th.style.width) || th.getBoundingClientRect().width;
+  });
+  tbl.style.width = total + "px";
+}
+
+function colKey(beanName, col) { return beanName + "\u0000" + col; }
+
+function autoFitWidth(texts) {
+  var longest = 0;
+  for (var i = 0; i < texts.length; i++) {
+    var t = texts[i];
+    if (t && t.length > longest) longest = t.length;
+  }
+  return Math.min(MAX_AUTO_W, Math.max(MIN_COL_W, longest * 7 + 26));
+}
+
+// texts used for auto-fit: header + the values actually shown (sampled for big tables)
+function columnTexts(bean, col, rows, showParent) {
+  var texts = [col];
+  if (showParent && bean.parentFlat[col] !== undefined) texts.push(bean.parentFlat[col]);
+  var limit = Math.min(rows.length, 300);
+  for (var i = 0; i < limit; i++) {
+    var v = col === null ? rows[i].name : rows[i].flat[col];
+    if (v !== undefined) texts.push(v);
+  }
+  return texts;
+}
+
+function applyColumnWidth(th, bean, col, texts) {
+  var key = colKey(bean.name, col === null ? "\u0001module" : col);
+  var w = __colWidths[key];
+  if (w === undefined) { w = autoFitWidth(texts); __colWidths[key] = w; }
+  th.style.width = w + "px";
+
+  var grip = document.createElement("div");
+  grip.className = "jv-resizer";
+  grip.title = "드래그: 너비 조절 · 더블클릭: 자동 맞춤";
+  grip.addEventListener("mousedown", function (e) {
+    e.preventDefault(); e.stopPropagation();
+    startResize(e, th, key);
+  });
+  grip.addEventListener("dblclick", function (e) {
+    e.preventDefault(); e.stopPropagation();
+    var fit = autoFitWidth(texts);
+    __colWidths[key] = fit;
+    th.style.width = fit + "px";
+    syncTableWidth();
+  });
+  th.appendChild(grip);
+}
+
+function startResize(e, th, key) {
+  var startX = e.clientX;
+  var startW = th.getBoundingClientRect().width;
+  var grip = th.querySelector(".jv-resizer");
+  if (grip) grip.classList.add("active");
+  document.body.classList.add("jv-resizing");
+
+  function onMove(ev) {
+    var w = Math.max(MIN_COL_W, Math.round(startW + (ev.clientX - startX)));
+    __colWidths[key] = w;
+    th.style.width = w + "px";
+    syncTableWidth();
+  }
+  function onUp() {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    document.body.classList.remove("jv-resizing");
+    if (grip) grip.classList.remove("active");
+  }
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+}
+
+function th(text, cls) {
+  var el = document.createElement("th");
+  if (cls) el.className = cls;
+  el.textContent = text;
+  el.title = text;
+  return el;
+}
+function td(text, cls) {
+  var el = document.createElement("td");
+  var empty = (text === undefined);
+  el.className = (cls ? cls + " " : "") + (empty ? "jv-empty" : "");
+  el.textContent = empty ? "–" : text;
+  if (!empty) el.title = text;
+  return el;
+}
+
+function copyTableTsv() {
+  var bean = currentBean();
+  if (!bean) return;
+  var tbl = document.querySelector("#jvTblWrap table");
+  if (!tbl) return;
+  var lines = [];
+  tbl.querySelectorAll("tr").forEach(function (tr) {
+    var cells = [];
+    tr.querySelectorAll("th,td").forEach(function (c) { cells.push(c.textContent); });
+    lines.push(cells.join("\t"));
+  });
+  var text = lines.join("\n");
+  navigator.clipboard.writeText(text).then(function () { toast("TSV 복사됨 (" + lines.length + "행)"); })
+    .catch(function () {
+      var ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
+      ta.select(); try { document.execCommand("copy"); toast("TSV 복사됨"); } catch (e) {} ta.remove();
+    });
+}
+
 /* ---------- tabs / help ---------- */
 function switchTab(which) {
-  var tree = which === "tree";
-  document.getElementById("tabTree").classList.toggle("active", tree);
-  document.getElementById("tabRaw").classList.toggle("active", !tree);
-  document.getElementById("panelTree").classList.toggle("active", tree);
-  document.getElementById("panelRaw").classList.toggle("active", !tree);
-  if (tree) renderRows(true); else renderRaw();
+  var isTree = which === "tree", isRaw = which === "raw", isTable = which === "table";
+  document.getElementById("tabTree").classList.toggle("active", isTree);
+  document.getElementById("tabRaw").classList.toggle("active", isRaw);
+  document.getElementById("tabTable").classList.toggle("active", isTable);
+  document.getElementById("panelTree").classList.toggle("active", isTree);
+  document.getElementById("panelRaw").classList.toggle("active", isRaw);
+  document.getElementById("panelTable").classList.toggle("active", isTable);
+  if (isTree) renderRows(true);
+  else if (isRaw) renderRaw();
+  else if (isTable) renderTable();
 }
 
 function toggleHelp() {

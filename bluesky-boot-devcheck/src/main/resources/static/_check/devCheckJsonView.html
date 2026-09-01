@@ -129,7 +129,7 @@ table.jv-tbl td.jv-col-mod.jv-child.jv-last::before { content: "└"; }
   <h2>DevCheck JSON Viewer</h2>
 
   <div class="jv-nav">
-    <button class="jv-btn" onclick="location.href='index'">⬅ Controller List</button>
+    <button class="jv-btn" onclick="goToList()">⬅ Controller List</button>
     <button id="tabTree" class="jv-btn active" onclick="switchTab('tree')">🌳 Tree</button>
     <button id="tabTable" class="jv-btn" onclick="switchTab('table')" style="display:none;">📊 Table</button>
     <button id="tabRaw" class="jv-btn" onclick="switchTab('raw')">{ } Raw JSON</button>
@@ -1029,6 +1029,18 @@ function applyExample(q) {
   input.value = q;
   doSearch();
   input.focus();
+}
+
+/* Coming from the controller list is a same-window navigation, so going back
+   through history restores its search text, expanded groups and scroll position.
+   Opened directly (shared link, new tab)? Then just navigate to the list. */
+function goToList() {
+  var ref = document.referrer || "";
+  if (ref && ref.indexOf(location.origin) === 0 && /\/index(\?|#|$)/.test(ref) && history.length > 1) {
+    history.back();
+  } else {
+    location.href = "index";
+  }
 }
 
 /* ---------- keyboard ---------- */

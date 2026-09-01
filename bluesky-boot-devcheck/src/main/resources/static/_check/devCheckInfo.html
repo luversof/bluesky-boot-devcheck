@@ -218,10 +218,9 @@ function createGroupElement(group) {
       var row = document.createElement("div");
       row.className = "url-item" + (idx >= URL_PREVIEW_COUNT ? " url-hidden" : "");
 
-      // 기본: 트리 뷰어(jsonView)
+      // 기본: 트리 뷰어(jsonView) - 같은 창에서 이동해야 뷰어의 뒤로가기가 자연스럽다
       var a = document.createElement("a");
       a.href = "jsonView?url=" + encodeURIComponent(url);
-      a.target = "_blank";
       a.textContent = url;
       row.appendChild(a);
 

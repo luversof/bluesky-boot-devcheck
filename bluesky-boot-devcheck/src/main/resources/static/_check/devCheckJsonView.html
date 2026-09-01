@@ -113,7 +113,11 @@ table.jv-tbl tr.jv-parent-row td.jv-col-mod { background: #fff4e0; color: #8a6d3
 table.jv-tbl td.jv-diff { background: #eaf5ff; color: #14507d; }
 table.jv-tbl tbody tr:hover td.jv-diff { background: #ddeeff; }
 table.jv-tbl td.jv-empty { color: #ccc; }
+table.jv-tbl td.jv-col-mod.jv-child { padding-left: 26px; }
+table.jv-tbl td.jv-col-mod.jv-child::before { content: "├"; position: absolute; left: 10px; color: #cfd6dd; font-weight: normal; }
+table.jv-tbl td.jv-col-mod.jv-child.jv-last::before { content: "└"; }
 .jv-tbl-note { font-size: 12px; color: #999; margin: 8px 2px 0; }
+.jv-tbl-full { margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: #bbb; word-break: break-all; }
 .jv-legend { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #999; }
 .jv-legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
 .jv-legend i.diff { background: #eaf5ff; border: 1px solid #b8dcff; }
@@ -203,6 +207,7 @@ table.jv-tbl td.jv-empty { color: #ccc; }
       <span class="jv-legend"><i class="parent"></i> parent(상속 기준값)</span> &nbsp;·&nbsp;
       <span class="jv-legend"><i class="diff"></i> parent와 다른 값(재정의됨)</span> &nbsp;·&nbsp;
       <span id="jvTblSummary"></span>
+      <div id="jvTblBeanFull" class="jv-tbl-full"></div>
     </div>
   </div>
 
@@ -666,6 +671,27 @@ function updateSummary(visibleCount) {
 var __beans = [];          // [{ name, parent, modules, columns, rows }]
 var FLAT_DEPTH = 3;        // nested objects are flattened this deep, then shown as JSON
 
+/* Bean names come in two flavours:
+     1. @ConfigurationProperties auto-names: "<prefix>-<fully.qualified.ClassName>"
+        e.g. brick-modules.web.domain-com.nc.brick.modules.web.DomainModuleProperties
+        -> the prefix is the property key developers actually edit, so keep it.
+     2. explicitly declared bean names: e.g. brickCoreModuleProperties
+   Show the short class name first, then where it came from, so both stay legible. */
+function beanLabel(name) {
+  var dash = name.lastIndexOf("-");
+  if (dash > 0) {
+    var prefix = name.slice(0, dash), fqcn = name.slice(dash + 1);
+    // a package always has dots and starts lower-case; class names never contain "-"
+    if (fqcn.indexOf(".") !== -1 && /^[a-z]/.test(fqcn)) {
+      return { short: fqcn.slice(fqcn.lastIndexOf(".") + 1), detail: prefix, kind: "props" };
+    }
+  }
+  if (name.indexOf(".") !== -1 && /^[a-z]/.test(name)) {          // bare FQCN, no prefix
+    return { short: name.slice(name.lastIndexOf(".") + 1), detail: name.slice(0, name.lastIndexOf(".")), kind: "class" };
+  }
+  return { short: name, detail: "(bean name)", kind: "bean" };    // explicitly named bean
+}
+
 function detectBeans(data) {
   var beans = [];
   if (!data || typeof data !== "object" || Array.isArray(data)) return beans;
@@ -719,13 +745,42 @@ function prepareTable() {
   __beans = detectBeans(__data);
   var sel = document.getElementById("jvTblBean");
   sel.innerHTML = "";
+  // Bean order from getBeansOfType() is registration order, which reads as random.
+  // Group by where the properties come from, then sort by class name inside each group.
+  var BEAN_GROUP = "직접 지정한 bean 이름";
+  var groups = {};
   __beans.forEach(function (b, i) {
-    var o = document.createElement("option");
-    o.value = String(i);
-    o.textContent = b.name + "  (" + b.rows.length + " " + b.kind + "s × " + b.columns.length + " props)";
-    sel.appendChild(o);
+    var lab = beanLabel(b.name);
+    var key = lab.kind === "bean" ? BEAN_GROUP : lab.detail.split(".")[0];
+    (groups[key] = groups[key] || []).push({ bean: b, index: i, lab: lab });
   });
-  sel.title = sel.options.length ? sel.options[sel.selectedIndex >= 0 ? sel.selectedIndex : 0].textContent : "";
+  Object.keys(groups)
+    .sort(function (a, b) {                       // named beans last, everything else A-Z
+      if (a === BEAN_GROUP) return 1;
+      if (b === BEAN_GROUP) return -1;
+      return a.localeCompare(b);
+    })
+    .forEach(function (key) {
+      var items = groups[key].sort(function (x, y) {
+        var c = x.lab.short.toLowerCase().localeCompare(y.lab.short.toLowerCase());
+        return c !== 0 ? c : x.lab.detail.localeCompare(y.lab.detail);
+      });
+      var holder = sel;
+      if (Object.keys(groups).length > 1) {
+        holder = document.createElement("optgroup");
+        holder.label = key;
+        sel.appendChild(holder);
+      }
+      items.forEach(function (it) {
+        var o = document.createElement("option");
+        o.value = String(it.index);
+        o.textContent = it.lab.short + "  ·  " + it.lab.detail +
+          "   (" + it.bean.rows.length + " " + it.bean.kind + "s × " + it.bean.columns.length + " props)";
+        o.title = it.bean.name;
+        holder.appendChild(o);
+      });
+    });
+  sel.title = sel.value !== "" && __beans[parseInt(sel.value, 10)] ? __beans[parseInt(sel.value, 10)].name : "";
   sel.style.display = __beans.length > 1 ? "" : "none";
   document.getElementById("tabTable").style.display = __beans.length ? "" : "none";
   if (__beans.length) renderTable();
@@ -740,7 +795,9 @@ function currentBean() {
 function renderTable() {
   var bean = currentBean();
   var selEl = document.getElementById("jvTblBean");
-  if (selEl.options.length && selEl.selectedIndex >= 0) selEl.title = selEl.options[selEl.selectedIndex].textContent;
+  if (bean) selEl.title = bean.name;
+  var fullEl = document.getElementById("jvTblBeanFull");
+  if (fullEl) fullEl.textContent = bean ? bean.name : "";
   if (bean) {
     document.getElementById("jvTblFilter").placeholder =
       (bean.kind === "group" ? "그룹명" : "모듈명") + " / 값 필터";
@@ -780,7 +837,7 @@ function renderTable() {
   var thead = document.createElement("thead");
   var htr = document.createElement("tr");
   var modTh = th(bean.kind, "jv-col-mod");
-  applyColumnWidth(modTh, bean, null, columnTexts(bean, null, rows, showParent));
+  applyColumnWidth(modTh, bean, null, columnTexts(bean, null, rows, showParent), 22);
   htr.appendChild(modTh);
   columns.forEach(function (c) {
     var cth = th(c, "");
@@ -791,16 +848,18 @@ function renderTable() {
   tbl.appendChild(thead);
 
   var tbody = document.createElement("tbody");
-  if (showParent && Object.keys(bean.parentFlat).length) {
+  var showParentRow = showParent && Object.keys(bean.parentFlat).length > 0;
+  if (showParentRow) {
     var ptr = document.createElement("tr");
     ptr.className = "jv-parent-row";
     ptr.appendChild(td("parent", "jv-col-mod"));
     columns.forEach(function (c) { ptr.appendChild(td(bean.parentFlat[c], "")); });
     tbody.appendChild(ptr);
   }
-  rows.forEach(function (r) {
+  rows.forEach(function (r, ri) {
     var tr = document.createElement("tr");
-    tr.appendChild(td(r.name, "jv-col-mod"));
+    tr.appendChild(td(r.name, "jv-col-mod" + (showParentRow ? " jv-child" : "") +
+                              (showParentRow && ri === rows.length - 1 ? " jv-last" : "")));
     columns.forEach(function (c) {
       var v = r.flat[c];
       var differs = Object.keys(bean.parentFlat).length > 0 && v !== bean.parentFlat[c];
@@ -861,10 +920,11 @@ function columnTexts(bean, col, rows, showParent) {
   return texts;
 }
 
-function applyColumnWidth(th, bean, col, texts) {
+function applyColumnWidth(th, bean, col, texts, extraPx) {
+  var pad = extraPx || 0;
   var key = colKey(bean.name, col === null ? "\u0001module" : col);
   var w = __colWidths[key];
-  if (w === undefined) { w = autoFitWidth(texts); __colWidths[key] = w; }
+  if (w === undefined) { w = autoFitWidth(texts) + pad; __colWidths[key] = w; }
   th.style.width = w + "px";
 
   var grip = document.createElement("div");
@@ -876,7 +936,7 @@ function applyColumnWidth(th, bean, col, texts) {
   });
   grip.addEventListener("dblclick", function (e) {
     e.preventDefault(); e.stopPropagation();
-    var fit = autoFitWidth(texts);
+    var fit = autoFitWidth(texts) + pad;
     __colWidths[key] = fit;
     th.style.width = fit + "px";
     syncTableWidth();

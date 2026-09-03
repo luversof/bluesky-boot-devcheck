@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
@@ -20,6 +21,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import io.github.luversof.boot.devcheck.annotation.DevCheckApiController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckViewController;
+import io.github.luversof.boot.devcheck.controller.DevCheckConfigurationMetadataController;
 import io.github.luversof.boot.devcheck.controller.DevCheckCoreController;
 import io.github.luversof.boot.devcheck.controller.DevCheckCoreViewController;
 import io.github.luversof.boot.devcheck.controller.servlet.DevCheckApiMvcController;
@@ -54,6 +56,11 @@ public class DevCheckMvcAutoConfiguration implements WebMvcConfigurer {
 	@Bean
 	DevCheckCoreController blueskyBootDevCheckCoreController(ApplicationContext applicationContext) {
 		return new DevCheckCoreController(applicationContext);
+	}
+
+	@Bean
+	DevCheckConfigurationMetadataController blueskyBootDevCheckConfigurationMetadataController(ConfigurableEnvironment environment) {
+		return new DevCheckConfigurationMetadataController(environment);
 	}
 
 	@Bean

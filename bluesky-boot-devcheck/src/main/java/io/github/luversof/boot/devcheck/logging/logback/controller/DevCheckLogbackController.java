@@ -13,7 +13,7 @@ import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import io.github.luversof.boot.devcheck.logging.logback.service.LogbackAppenderService;
 
 @DevCheckController
-@RequestMapping(value = "/blueskyBoot/devcheck/logging/logback", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/devcheck/logging/logback", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DevCheckLogbackController {
 	
 	private final LogbackAppenderService<ILoggingEvent> playncLogbackAppenderService;

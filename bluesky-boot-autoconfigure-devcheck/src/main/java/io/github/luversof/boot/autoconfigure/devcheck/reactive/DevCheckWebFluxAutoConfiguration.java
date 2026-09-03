@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.boot.webflux.autoconfigure.WebFluxRegistrations;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.reactive.function.server.RequestPredicates;
@@ -23,6 +24,7 @@ import org.springframework.web.reactive.result.method.annotation.RequestMappingH
 import io.github.luversof.boot.devcheck.annotation.DevCheckApiController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckViewController;
+import io.github.luversof.boot.devcheck.controller.DevCheckConfigurationMetadataController;
 import io.github.luversof.boot.devcheck.controller.DevCheckCoreController;
 import io.github.luversof.boot.devcheck.controller.DevCheckCoreViewController;
 import io.github.luversof.boot.devcheck.controller.reactive.DevCheckApiWebFluxController;
@@ -57,6 +59,11 @@ public class DevCheckWebFluxAutoConfiguration {
 	@Bean
 	DevCheckCoreController blueskyBootDevCheckCoreController(ApplicationContext applicationContext) {
 		return new DevCheckCoreController(applicationContext);
+	}
+
+	@Bean
+	DevCheckConfigurationMetadataController blueskyBootDevCheckConfigurationMetadataController(ConfigurableEnvironment environment) {
+		return new DevCheckConfigurationMetadataController(environment);
 	}
 
 	@Bean

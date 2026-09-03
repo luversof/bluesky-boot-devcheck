@@ -14,7 +14,7 @@ import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 
 @DevCheckController
-@RequestMapping(value = "/blueskyBoot/devcheck/core", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/devcheck/core", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DevCheckCoreController {
 	
 	private final ApplicationContext applicationContext;

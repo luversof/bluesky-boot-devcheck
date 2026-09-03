@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>DevCheck Properties Viewer</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; color: #494949; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.pv-container { min-width: 900px; padding: 15px; }
+h2 { margin: 0; padding: 10px 10px 14px 10px; font-size: 30px; letter-spacing: -1.2px; color: #1f1f1f; font-weight: normal; }
+
+.pv-nav { padding: 4px 0 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pv-btn { padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: none; cursor: pointer; color: #494949; }
+.pv-btn:hover { background: #f4f5f7; }
+.pv-btn.active { background: #e8f0fe; border-color: #b5cbf5; color: #3466c8; font-weight: bold; }
+.pv-status { font-size: 12px; color: #999; margin-left: auto; }
+
+/* two panes */
+.pv-panes { display: grid; grid-template-columns: minmax(380px, 1fr) minmax(420px, 1.3fr); gap: 14px; align-items: start; }
+.pv-pane { border: 1px solid #eaecef; border-radius: 4px; overflow: hidden; }
+.pv-pane > header { background: #fafbfc; border-bottom: 1px solid #eaecef; padding: 8px 12px; font-size: 13px; font-weight: bold; color: #1f1f1f;
+  display: flex; align-items: center; gap: 8px; }
+.pv-pane > header .pv-sub { font-weight: normal; color: #999; font-size: 12px; margin-left: auto; white-space: nowrap; }
+
+/* editor */
+.pv-editor-wrap { position: relative; }
+#pvEditor { width: 100%; height: calc(100vh - 330px); min-height: 320px; border: 0; resize: vertical; outline: none;
+  padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 20px;
+  color: #494949; white-space: pre; overflow: auto; position: relative; z-index: 1; background: transparent; }
+/* same metrics as the textarea so the marks line up exactly */
+.pv-highlight { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 20px;
+  white-space: pre; color: transparent; }
+.pv-highlight > div { will-change: transform; }
+.pv-highlight mark { background: #ffe58f; color: transparent; border-radius: 2px; }
+.pv-highlight mark.cur { background: #ffb04d; }
+.pv-ac { position: absolute; z-index: 20; background: #fff; border: 1px solid #d0d7de; border-radius: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  max-height: 260px; overflow: auto; min-width: 380px; display: none; }
+.pv-ac.show { display: block; }
+.pv-ac-item { padding: 6px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; cursor: pointer; border-bottom: 1px solid #f4f5f7; }
+.pv-ac-item:last-child { border-bottom: 0; }
+.pv-ac-item.sel, .pv-ac-item:hover { background: #e8f0fe; }
+.pv-ac-item .k { color: #3466c8; }
+.pv-ac-item .t { color: #999; font-size: 11px; margin-left: 6px; }
+.pv-ac-item .d { display: block; color: #8a8a8a; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin-top: 2px; }
+
+/* problems */
+.pv-problems { border-top: 1px solid #eaecef; max-height: 150px; overflow: auto; }
+.pv-problem { display: flex; gap: 8px; padding: 6px 12px; font-size: 12px; border-bottom: 1px solid #f4f5f7; }
+.pv-problem .line { color: #999; flex-shrink: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.pv-problem.warn { background: #fffaf0; color: #8a6d3b; }
+.pv-problem.err { background: #fff5f5; color: #b3312c; }
+.pv-ok { padding: 8px 12px; font-size: 12px; color: #2f855a; background: #f2fbf5; border-top: 1px solid #eaecef; }
+
+/* result */
+.pv-result { max-height: calc(100vh - 300px); overflow: auto; }
+table.pv-tbl { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+table.pv-tbl th, table.pv-tbl td { border-bottom: 1px solid #eef0f2; border-right: 1px solid #eef0f2; padding: 5px 8px; text-align: left; vertical-align: top; }
+table.pv-tbl thead th { position: sticky; top: 0; z-index: 2; background: #fafbfc; font-weight: bold; color: #1f1f1f; box-shadow: inset 0 -2px 0 #eaecef; }
+table.pv-tbl tbody tr:hover td { background: #f8f9fa; }
+td.pv-target { font-weight: bold; color: #3466c8; white-space: nowrap; }
+td.pv-key { color: #494949; word-break: break-all; }
+td.pv-val { word-break: break-all; }
+.pv-src { display: inline-block; padding: 1px 6px; border-radius: 9px; font-size: 10px; font-weight: bold; vertical-align: middle; }
+.pv-src.parent { background: #fff4e0; color: #8a6d3b; }
+.pv-src.group  { background: #eef7e6; color: #4b7b25; }
+.pv-src.module { background: #eaf5ff; color: #14507d; }
+.pv-overridden { color: #bbb; text-decoration: line-through; }
+.pv-base { color: #777; }
+.pv-basemissing { color: #ccc; }
+.pv-changed { background: #eaf5ff; color: #14507d; font-weight: bold; }
+.pv-inherited { color: #8a6d3b; }
+table.pv-tbl tr.pv-parent-row td { background: #fffaf0; color: #8a6d3b; }
+table.pv-tbl tr.pv-parent-row td.pv-target { font-weight: bold; }
+.pv-empty { padding: 26px 14px; color: #999; font-size: 13px; }
+.pv-declared { padding: 10px 12px; border-bottom: 1px solid #eaecef; background: #f7fbff; font-size: 12px; color: #494949; }
+.pv-chip { display: inline-block; margin: 2px 4px 2px 0; padding: 1px 8px; border-radius: 10px; background: #e8f0fe; color: #14507d;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; }
+.pv-chip.new { background: #eef7e6; color: #4b7b25; }
+.pv-chip.grp { background: #fff4e0; color: #8a6d3b; }
+.pv-note { font-size: 12px; color: #999; padding: 8px 12px; border-top: 1px solid #eaecef; background: #fafbfc; }
+.pv-note b { color: #777; }
+.pv-msg { padding: 12px; font-size: 13px; color: #b3312c; }
+.pv-copybar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid #eaecef; background: #fafbfc; }
+.pv-copylabel { font-size: 12px; font-weight: bold; color: #666; }
+.pv-copybar select { max-width: 190px; font-size: 12px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #494949; }
+.pv-copybar input[type=text] { width: 150px; font-size: 12px; padding: 5px 8px; border: 1px solid #ddd; border-radius: 4px; }
+.pv-copybar .pv-btn { padding: 4px 10px; font-size: 12px; }
+.pv-arrow { color: #999; }
+.pv-chk-sm { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #666; white-space: nowrap; }
+.pv-findbox { width: 150px; font-size: 12px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-weight: normal; margin-left: auto; }
+.pv-findbox.miss { border-color: #e8a5a2; background: #fff5f5; }
+.pv-findcount { font-size: 11px; color: #999; font-weight: normal; white-space: nowrap; min-width: 34px; }
+.pv-modfilter { width: 140px; font-size: 12px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-weight: normal; margin-left: auto; }
+.pv-modfilter + .pv-sub { margin-left: 8px; }
+.pv-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #333; color: #fff;
+  padding: 8px 16px; border-radius: 4px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 30; }
+.pv-toast.show { opacity: 0.95; }
+</style>
+</head>
+<body>
+<div class="pv-container">
+  <h2>DevCheck Properties Viewer</h2>
+
+  <div class="pv-nav">
+    <button class="pv-btn" onclick="goToList()">⬅ Controller List</button>
+    <button id="pvLoadBtn" class="pv-btn" onclick="loadProjectProperties()" title="properties 파일에 적힌 원문 그대로 불러옵니다 (가공 전). 가공된 결과는 오른쪽 표에서 확인하세요">📥 프로젝트 설정 불러오기</button>
+    <label class="pv-btn" style="display:inline-flex;align-items:center;gap:6px;" title="켜면 애플리케이션이 설정한 값만(properties 파일, 프레임워크가 주입한 기본 설정 포함), 끄면 시스템 속성·환경변수까지">
+      <input type="checkbox" id="pvConfigOnly" checked /> 시스템/환경변수 제외
+    </label>
+    <button class="pv-btn" onclick="clearEditor()">비우기</button>
+    <label class="pv-btn" style="display:inline-flex;align-items:center;gap:6px;">
+      <input type="checkbox" id="pvOnlyAffected" checked onchange="render()" /> 입력한 키만 (새 모듈은 항상 전체)
+    </label>
+    <span id="pvStatus" class="pv-status"></span>
+  </div>
+
+  <div class="pv-panes">
+    <!-- left: editor -->
+    <div class="pv-pane">
+      <header>
+        properties 입력
+        <input type="text" id="pvEditorFind" class="pv-findbox" placeholder="입력 검색 (Ctrl+F)"
+               onkeyup="updateFind(true)" onkeydown="onFindKeydown(event)" />
+        <span id="pvFindCount" class="pv-findcount"></span>
+        <span class="pv-sub">Ctrl+Space 자동완성</span>
+      </header>
+      <div class="pv-copybar">
+        <span class="pv-copylabel">모듈 복사</span>
+        <select id="pvCopySource" title="복사할 원본 모듈"></select>
+        <span class="pv-arrow">→</span>
+        <input type="text" id="pvCopyTarget" placeholder="새 모듈 이름" title="새로 만들 모듈 이름"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();copyModule();}" />
+        <button id="pvCopyBtn" class="pv-btn" onclick="copyModule()" title="생성된 properties를 클립보드로 복사합니다 (편집기에는 넣지 않음)">📋 복사</button>
+        <label class="pv-chk-sm" title="기본은 properties 파일에 설정된 값만 복사합니다. 켜면 설정하지 않아 상속·기본값으로 정해진 값까지 전부 명시적으로 씁니다">
+          <input type="checkbox" id="pvCopyFull" /> 미설정 값도 포함
+        </label>
+      </div>
+      <div class="pv-editor-wrap">
+        <div class="pv-highlight" aria-hidden="true"><div id="pvHighlight"></div></div>
+        <textarea id="pvEditor" spellcheck="false" placeholder="properties 입력 — Ctrl+Space로 자동완성"></textarea>
+        <div id="pvAc" class="pv-ac"></div>
+      </div>
+      <div id="pvProblems" class="pv-problems"></div>
+    </div>
+
+    <!-- right: resolved result -->
+    <div class="pv-pane">
+      <header>
+        생성되는 properties
+        <input type="text" id="pvModuleFilter" class="pv-modfilter" placeholder="모듈 검색" onkeyup="render()" />
+        <span class="pv-sub" id="pvResultSub"></span>
+      </header>
+      <div id="pvDeclared" class="pv-declared" style="display:none;"></div>
+      <div id="pvResult" class="pv-result"></div>
+      <div class="pv-note">
+        우선순위 <b>parent → group → moduleInfo → module</b> (뒤가 이김).
+        moduleInfo 단계는 실행 시점 값이라 이 화면에서는 계산하지 않습니다.
+      </div>
+    </div>
+  </div>
+  <div id="pvMessage" class="pv-msg" style="display:none;"></div>
+  <div id="pvToast" class="pv-toast"></div>
+</div>
+
+<script>
+/* Properties viewer.
+   Left  : an editor with completion driven by the real spring-configuration-metadata.
+   Right : which module/group each typed key lands on, and which line wins.
+
+   Metadata only describes "modules"/"groups" down to the Map itself, because the
+   map values reuse the parent properties type. So the module/group level keys are
+   derived: for prefix P, every parent key "P.x" also exists as
+   "P.groups.<group>.x" and "P.modules.<module>.x". */
+
+var META = { properties: [], groups: [], sources: [] };
+var PREFIXES = [];             // [{ prefix, keys:[{name(suffix), type, description, defaultValue}] }]
+var KEY_INDEX = [];            // completion candidates
+var MODULE_NAMES = [];
+var MODULE_GROUPS = {};        // groupName -> [moduleName]
+var GROUP_OF_MODULE = {};      // moduleName -> groupName
+var CONTEXT_LOADED = false;
+var STRUCTURAL = { parent: true, modules: true, groups: true };
+
+/* ---------- bootstrapping ---------- */
+window.onload = async function () {
+  await discoverEndpoints();                         // resolves the real devcheck paths first
+  await loadMetadata();
+  buildKeyIndex();                                   // prefixes are needed to query by prefix
+  await Promise.all([loadContext(), loadBaseline(), preloadApplicationProperties()]);
+  deriveContext();                                   // module/group names from the data itself
+  buildKeyIndex();                                   // rebuild so completion knows those names
+  updateStatus();
+  updateEditorPlaceholder();
+  render();
+  var ed = document.getElementById("pvEditor");
+  ed.addEventListener("input", onEditorInput);
+  ed.addEventListener("keydown", onEditorKeydown);
+  ed.addEventListener("blur", function () { setTimeout(hideAc, 150); });
+  ed.addEventListener("scroll", syncHighlightScroll);
+};
+
+async function loadMetadata() {
+  try {
+    var url = devcheckEndpoint("configurationMetadata", "devcheck/metadata/configurationMetadata");
+    var res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var body = await res.json();
+    META.sources = body.sources || [];
+    (body.documents || []).forEach(function (doc) {
+      var parsed;
+      try { parsed = JSON.parse(doc); } catch (e) { return; }
+      if (parsed.properties) META.properties = META.properties.concat(parsed.properties);
+      if (parsed.groups) META.groups = META.groups.concat(parsed.groups);
+    });
+  } catch (e) {
+    showMessage("configuration metadata를 불러오지 못했습니다: " + e +
+      "\n(devcheck 최신 버전이 배포되어야 /_check/devcheck/metadata/configurationMetadata 가 존재합니다)");
+  }
+}
+
+// module / group names come from the running application when available
+async function loadContext() {
+  var url = contextEndpoint();
+  if (!url) return;                 // this framework does not expose one - names are derived instead
+  try {
+    var res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) return;
+    var ctx = await res.json();
+    MODULE_NAMES = (ctx.moduleNameSet || []).slice().sort();
+    MODULE_GROUPS = ctx.moduleGroups || {};
+    Object.keys(MODULE_GROUPS).forEach(function (g) {
+      (MODULE_GROUPS[g] || []).forEach(function (m) { GROUP_OF_MODULE[m] = g; });
+    });
+    CONTEXT_LOADED = true;
+  } catch (e) { /* optional - the viewer still works without live module names */ }
+}
+
+/* Module and group names are derived from the data itself rather than from a
+   framework specific context endpoint, so bluesky-boot and brick-modules both work:
+     - every "modules"/"groups" key of the properties maps
+     - "...module-name-set" / "...module-groups.<g>" in the application's own properties */
+// The editor shows values exactly as written in the properties file, while any
+// logic that has to interpret a value uses the resolved one.
+function appResolved(entry) {
+  return entry.resolvedValue !== undefined && entry.resolvedValue !== null ? entry.resolvedValue : entry.value;
+}
+
+function deriveContext() {
+  var modules = MODULE_NAMES.slice();
+  var groups = {};
+  Object.keys(MODULE_GROUPS).forEach(function (g) { groups[g] = (MODULE_GROUPS[g] || []).slice(); });
+
+  Object.keys(BASELINE).forEach(function (prefix) {
+    Object.keys(BASELINE[prefix].modules || {}).forEach(function (m) {
+      if (modules.indexOf(m) === -1) modules.push(m);
+    });
+    Object.keys(BASELINE[prefix].groups || {}).forEach(function (g) {
+      if (!groups[g]) groups[g] = [];
+    });
+  });
+
+  (APP_PROPERTIES || []).forEach(function (p) {
+    if (/(^|\.)module-name-set$/.test(p.name)) {
+      splitList(appResolved(p)).forEach(function (m) { if (modules.indexOf(m) === -1) modules.push(m); });
+      return;
+    }
+    var gm = /(?:^|\.)module-groups\.([^.]+)$/.exec(p.name);
+    if (gm) {
+      var members = splitList(appResolved(p));
+      groups[gm[1]] = members;
+      members.forEach(function (m) { if (modules.indexOf(m) === -1) modules.push(m); });
+    }
+  });
+
+  MODULE_NAMES = modules.sort();
+  MODULE_GROUPS = groups;
+  GROUP_OF_MODULE = {};
+  Object.keys(groups).forEach(function (g) {
+    (groups[g] || []).forEach(function (m) { GROUP_OF_MODULE[m] = g; });
+  });
+  CONTEXT_LOADED = MODULE_NAMES.length > 0;
+}
+
+// The hint is built from the prefixes this application really exposes, so a
+// brick-modules app never sees a bluesky-boot example and vice versa.
+function updateEditorPlaceholder() {
+  var ed = document.getElementById("pvEditor");
+  if (!PREFIXES.length) { ed.placeholder = "properties 입력 — Ctrl+Space로 자동완성"; return; }
+  var p = PREFIXES[0];
+  var key = p.keys.filter(function (k) { return !STRUCTURAL[k.name]; })[0];
+  var target = p.container.modules && MODULE_NAMES.length ? ".modules." + MODULE_NAMES[0] : "";
+  ed.placeholder = "예) " + p.prefix + target + (key ? "." + key.name : "") + "=값";
+}
+
+function updateStatus() {
+  var el = document.getElementById("pvStatus");
+  var bits = [PREFIXES.length + " prefix", KEY_INDEX.length.toLocaleString() + " keys"];
+  if (CONTEXT_LOADED) bits.push(MODULE_NAMES.length + " modules / " + Object.keys(MODULE_GROUPS).length + " groups");
+  else bits.push("module 목록 없음");
+  el.textContent = bits.join(" · ");
+}
+
+function showMessage(msg) {
+  var el = document.getElementById("pvMessage");
+  el.textContent = msg;
+  el.style.display = "block";
+}
+
+/* The framework generates a lot of values on its own (builder defaults, ModuleInfo,
+   group inheritance). Rather than re-implementing that merge in the browser, the
+   viewer fetches what the running application actually computed - the module
+   properties maps are the fully merged result - and uses it as the baseline. */
+var BASELINE = {};            // prefix -> { beanName, parent:{k:v}, modules:{ name:{k:v} } }
+var BASELINE_SOURCES = [];
+
+/* Which properties-map endpoints exist depends on the framework in use, so they are
+   discovered from the devcheck controller list instead of being guessed - guessing
+   meant every bluesky-boot app fired 404s at the brick URLs and vice versa. */
+var DISCOVERED_URLS = [];
+
+async function discoverEndpoints() {
+  try {
+    var res = await fetch("devCheckInfoList", { headers: { Accept: "application/json" } });
+    if (!res.ok) return;
+    var list = await res.json();
+    (list || []).forEach(function (info) {
+      (info.urlList || []).forEach(function (url) {
+        // urls are advertised as "path?param={param}" - keep the path, drop the template
+        var path = url.split("?")[0];
+        if (path.indexOf("{") === -1) DISCOVERED_URLS.push(path);   // skip templated paths
+      });
+    });
+  } catch (e) { /* older devcheck: fall back to no baseline */ }
+}
+
+// One endpoint is advertised once per module/domain ("/preorder/_check/..",
+// "/aion2/preorder/_check/.."), so keep a single URL per endpoint name and prefer
+// the one under this page's own base path.
+function pageBasePath() {
+  var marker = "/_check/";
+  var at = location.pathname.indexOf(marker);
+  return at === -1 ? "" : location.pathname.slice(0, at + marker.length);
+}
+
+function uniqueEndpoints(urls) {
+  var base = pageBasePath();
+  var byName = {}, order = [];
+  urls.forEach(function (url) {
+    var name = url.split("?")[0].split("/").pop();
+    if (!byName[name]) { byName[name] = url; order.push(name); return; }
+    // a later URL wins only when it is the one matching this page
+    if (base && url.indexOf(base) === 0 && byName[name].indexOf(base) !== 0) byName[name] = url;
+  });
+  return order.map(function (name) { return byName[name]; });
+}
+
+function devcheckEndpoint(name, fallback) {
+  var hit = uniqueEndpoints(DISCOVERED_URLS.filter(function (url) {
+    return url.split("/").pop() === name;
+  }))[0];
+  return hit || fallback;
+}
+
+function baselineEndpoints() {
+  return uniqueEndpoints(DISCOVERED_URLS.filter(function (url) { return /(Module|Group)PropertiesMap$/.test(url); }));
+}
+
+function contextEndpoint() {
+  return uniqueEndpoints(DISCOVERED_URLS.filter(function (url) { return /BootContext$/.test(url); }))[0] || null;
+}
+
+
+// "<prefix>-<fully.qualified.ClassName>" is how @ConfigurationProperties names beans
+function prefixFromBeanName(name) {
+  var dash = name.lastIndexOf("-");
+  if (dash > 0) {
+    var prefix = name.slice(0, dash), fqcn = name.slice(dash + 1);
+    if (fqcn.indexOf(".") !== -1 && /^[a-z]/.test(fqcn)) return prefix;
+  }
+  return null;                 // explicitly named bean: prefix cannot be derived
+}
+
+function flattenValues(value, prefix, depth, out) {
+  out = out || {};
+  if (value === null || typeof value !== "object") { out[prefix] = value === null ? "null" : String(value); return out; }
+  if (Array.isArray(value)) { out[prefix] = JSON.stringify(value); return out; }
+  var keys = Object.keys(value);
+  if (!keys.length) { out[prefix] = "{}"; return out; }
+  if (depth <= 0) { out[prefix] = JSON.stringify(value); return out; }
+  keys.forEach(function (k) { flattenValues(value[k], prefix ? prefix + "." + k : k, depth - 1, out); });
+  return out;
+}
+
+// metadata uses kebab-case, the JSON payload uses camelCase
+function toKebab(s) { return s.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase(); }
+function kebabPath(path) { return path.split(".").map(toKebab).join("."); }
+
+async function loadBaseline() {
+  var endpoints = baselineEndpoints();
+  for (var i = 0; i < endpoints.length; i++) {
+    var url = endpoints[i];
+    try {
+      var res = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!res.ok) continue;
+      var data = await res.json();
+      if (!data || typeof data !== "object") continue;
+      var used = false;
+      Object.keys(data).forEach(function (beanName) {
+        var bean = data[beanName];
+        if (!bean || typeof bean !== "object") return;
+        var isGroups = !bean.modules && !!bean.groups;
+        var entries = bean.modules || bean.groups;
+        if (!entries || typeof entries !== "object") return;
+        var prefix = prefixFromBeanName(beanName);
+        if (!prefix) return;                       // cannot line it up with metadata
+        // module and group beans share a prefix, so they must not overwrite each other
+        var rec = BASELINE[prefix] || { beanName: beanName, parent: {}, modules: {}, groups: {} };
+        if (bean.parent && !Object.keys(rec.parent).length) rec.parent = kebabKeys(flattenValues(bean.parent, "", 4));
+        Object.keys(entries).forEach(function (m) {
+          (isGroups ? rec.groups : rec.modules)[m] = kebabKeys(flattenValues(entries[m], "", 4));
+        });
+        BASELINE[prefix] = rec;
+        used = true;
+      });
+      if (used) BASELINE_SOURCES.push(url);
+    } catch (e) { /* endpoint not present in this app */ }
+  }
+}
+
+function kebabKeys(flat) {
+  var out = {};
+  Object.keys(flat).forEach(function (k) { out[kebabPath(k)] = flat[k]; });
+  return out;
+}
+
+// Values a module ends up with: the ones the app really computed when it exists,
+// otherwise what it would inherit from parent (declaring a module always creates it).
+function baselineFor(prefix, moduleName) {
+  var rec = BASELINE[prefix];
+  if (!rec) return null;
+  var mod = rec.modules[moduleName];
+  if (mod) return { values: mod, inherited: false };
+  return { values: rec.parent, inherited: true };
+}
+
+function baselineValue(prefix, moduleName, suffix) {
+  var b = baselineFor(prefix, moduleName);
+  if (!b) return undefined;
+  return b.values[suffix];
+}
+
+/* ---------- metadata -> completion index ---------- */
+// "bluesky-boot.core.modules" typed as Map<String, X> marks "bluesky-boot.core" as a
+// module-aware prefix; the same holds for "groups".
+function buildKeyIndex() {
+  var mapContainers = {};       // prefix -> { modules:bool, groups:bool }
+  META.properties.forEach(function (p) {
+    var m = /^(.*)\.(modules|groups)$/.exec(p.name);
+    // the value type must be a properties class, not Map<String,String> and friends
+    if (m && /^java\.util\.Map<[^,]+,\s*(?!java\.)[a-z][\w.]*\.[A-Z]/.test(p.type || "")) {
+      (mapContainers[m[1]] = mapContainers[m[1]] || {})[m[2]] = true;
+    }
+  });
+
+  var byPrefix = {}, seenKey = {};
+  META.properties.forEach(function (p) {
+    if (seenKey[p.name]) return;               // the same key is declared in several docs
+    seenKey[p.name] = true;
+    var owner = null;
+    Object.keys(mapContainers).forEach(function (prefix) {
+      if (p.name.indexOf(prefix + ".") === 0 && (!owner || prefix.length > owner.length)) owner = prefix;
+    });
+    if (!owner) return;
+    var suffix = p.name.slice(owner.length + 1);
+    if (suffix === "modules" || suffix === "groups") return;    // the containers themselves
+    if (suffix.indexOf("modules.") === 0 || suffix.indexOf("groups.") === 0) return;
+    (byPrefix[owner] = byPrefix[owner] || []).push({
+      name: suffix, type: p.type || "", description: p.description || "", defaultValue: p.defaultValue
+    });
+  });
+
+  PREFIXES = Object.keys(byPrefix).sort().map(function (prefix) {
+    return { prefix: prefix, container: mapContainers[prefix] || {}, keys: byPrefix[prefix].sort(function (a, b) { return a.name.localeCompare(b.name); }) };
+  });
+
+  KEY_INDEX = [];
+  PREFIXES.forEach(function (p) {
+    p.keys.forEach(function (k) {
+      KEY_INDEX.push(cand(p.prefix + "." + k.name, k, "parent", p.prefix, k.name));
+    });
+    if (p.container.groups) {
+      var groups = Object.keys(MODULE_GROUPS);
+      if (!groups.length) groups = ["<group>"];
+      groups.forEach(function (g) {
+        p.keys.forEach(function (k) {
+          if (STRUCTURAL[k.name]) return;      // parent/modules/groups only exist at the top level
+          KEY_INDEX.push(cand(p.prefix + ".groups." + g + "." + k.name, k, "group", p.prefix, k.name, g));
+        });
+      });
+    }
+    if (p.container.modules) {
+      var mods = MODULE_NAMES.length ? MODULE_NAMES : ["<module>"];
+      mods.forEach(function (m) {
+        p.keys.forEach(function (k) {
+          if (STRUCTURAL[k.name]) return;
+          KEY_INDEX.push(cand(p.prefix + ".modules." + m + "." + k.name, k, "module", p.prefix, k.name, m));
+        });
+      });
+    }
+  });
+}
+
+function cand(full, k, level, prefix, suffix, target) {
+  return { name: full, type: k.type, description: k.description, defaultValue: k.defaultValue,
+           level: level, prefix: prefix, suffix: suffix, target: target || null };
+}
+
+function shortType(t) {
+  if (!t) return "";
+  return t.replace(/java\.lang\.|java\.util\./g, "").replace(/([a-z0-9_]+\.)+/g, "");
+}
+
+/* ---------- parsing the editor ---------- */
+function parseLines() {
+  var text = document.getElementById("pvEditor").value;
+  return text.split("\n").map(function (raw, i) {
+    var line = { no: i + 1, raw: raw, key: null, value: null, comment: false, blank: false };
+    var t = raw.trim();
+    if (!t) { line.blank = true; return line; }
+    if (t.charAt(0) === "#" || t.charAt(0) === "!") { line.comment = true; return line; }
+    var sep = t.search(/[=:]/);
+    if (sep === -1) { line.key = t; line.value = ""; line.missingSeparator = true; return line; }
+    line.key = t.slice(0, sep).trim();
+    line.value = t.slice(sep + 1).trim();
+    return line;
+  });
+}
+
+// classify a typed key against the metadata
+function classify(key) {
+  // prefixes nest ("bluesky-boot.web" vs "bluesky-boot.web.cookie"), so the most
+  // specific one owns the key - matching the first hit would misreport the rest.
+  var owner = null;
+  for (var i = 0; i < PREFIXES.length; i++) {
+    var cur = PREFIXES[i];
+    if (key.indexOf(cur.prefix + ".") !== 0) continue;
+    if (!owner || cur.prefix.length > owner.prefix.length) owner = cur;
+  }
+  if (owner) {
+    var p = owner;
+    var rest = key.slice(p.prefix.length + 1);
+    var level = "parent", target = null;
+    var mm = /^modules\.([^.]+)\.(.+)$/.exec(rest);
+    var gm = /^groups\.([^.]+)\.(.+)$/.exec(rest);
+    if (mm) { level = "module"; target = mm[1]; rest = mm[2]; }
+    else if (gm) { level = "group"; target = gm[1]; rest = gm[2]; }
+    var known = p.keys.filter(function (k) { return k.name === rest; })[0];
+    // a Map-valued key such as "properties.foo" is open ended: match on its head
+    if (!known) {
+      // "properties.foo" (Map) and "parent.resolve-type" (nested object) are both open ended
+      known = p.keys.filter(function (k) { return rest.indexOf(k.name + ".") === 0; })
+                    .sort(function (a, b) { return b.name.length - a.name.length; })[0];
+    }
+    return { prefix: p.prefix, level: level, target: target, suffix: rest, meta: known || null, container: p.container };
+  }
+  return null;
+}
+
+/* Some keys declare structure instead of carrying a value:
+     bluesky-boot.core.module-name-set=a,b,c      -> modules a, b, c exist
+     bluesky-boot.core.module-groups.<g>=a,b      -> group membership
+   CoreModuleProperties.load() also merges in every module named by a
+   "...modules.<name>.*" key, so typed keys declare modules too. */
+var DECLARED = { modules: [], groups: {} };
+
+function splitList(v) {
+  return (v || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+}
+
+function isStructuralSuffix(suffix) {
+  return suffix === "module-name-set" || suffix === "module-groups" || suffix.indexOf("module-groups.") === 0;
+}
+
+// A declaration may be written as a placeholder in the file. Interpret it with the
+// value the application resolved, and never treat an unresolved placeholder as a name.
+function declaredNames(key, rawValue) {
+  var value = rawValue;
+  if (!value || value.indexOf("${") !== -1) {
+    var hit = (APP_PROPERTIES || []).filter(function (entry) { return entry.name === key; })[0];
+    if (hit) value = appResolved(hit);
+  }
+  return splitList(value).filter(function (name) { return name.indexOf("${") === -1; });
+}
+
+function scanDeclarations(lines) {
+  var mods = [], groups = {};
+  lines.forEach(function (l) {
+    if (l.blank || l.comment || !l.key || l.missingSeparator) return;
+    var c = classify(l.key);
+    if (!c) return;
+    if (c.level === "parent" && c.suffix === "module-name-set") {
+      declaredNames(l.key, l.value).forEach(function (n) { if (mods.indexOf(n) === -1) mods.push(n); });
+      return;
+    }
+    var gm = /^module-groups\.(.+)$/.exec(c.suffix);
+    if (c.level === "parent" && gm) {
+      var members = declaredNames(l.key, l.value);
+      groups[gm[1]] = members;
+      members.forEach(function (n) { if (mods.indexOf(n) === -1) mods.push(n); });
+      return;
+    }
+    if (c.level === "module" && c.target && mods.indexOf(c.target) === -1) mods.push(c.target);
+  });
+  DECLARED = { modules: mods, groups: groups };
+}
+
+// live modules from the running app + everything the input declares
+function effectiveModules() {
+  var out = MODULE_NAMES.slice();
+  DECLARED.modules.forEach(function (m) { if (out.indexOf(m) === -1) out.push(m); });
+  return out;
+}
+
+function effectiveGroupNames() {
+  var out = Object.keys(MODULE_GROUPS);
+  Object.keys(DECLARED.groups).forEach(function (g) { if (out.indexOf(g) === -1) out.push(g); });
+  return out.sort();
+}
+
+function effectiveGroupOf(moduleName) {
+  var declared = Object.keys(DECLARED.groups).filter(function (g) {
+    return (DECLARED.groups[g] || []).indexOf(moduleName) !== -1;
+  })[0];
+  return declared || GROUP_OF_MODULE[moduleName] || null;
+}
+
+function renderDeclarations() {
+  var host = document.getElementById("pvDeclared");
+  var mods = effectiveModules();
+  var groups = effectiveGroupNames();
+  if (!DECLARED.modules.length && !Object.keys(DECLARED.groups).length) { host.style.display = "none"; return; }
+  host.style.display = "block";
+  host.innerHTML = "";
+
+  var line1 = document.createElement("div");
+  line1.innerHTML = "<b>입력으로 선언된 모듈</b> (" + DECLARED.modules.length + "): ";
+  DECLARED.modules.forEach(function (m) {
+    var chip = document.createElement("span");
+    chip.className = "pv-chip" + (MODULE_NAMES.indexOf(m) === -1 ? " new" : "");
+    chip.textContent = m + (effectiveGroupOf(m) ? " · " + effectiveGroupOf(m) : "");
+    chip.title = MODULE_NAMES.indexOf(m) === -1 ? "현재 앱에 없는 새 모듈" : "현재 앱에도 있는 모듈";
+    line1.appendChild(chip);
+  });
+  host.appendChild(line1);
+
+  if (Object.keys(DECLARED.groups).length) {
+    var line2 = document.createElement("div");
+    line2.style.marginTop = "5px";
+    line2.innerHTML = "<b>선언된 그룹</b>: ";
+    Object.keys(DECLARED.groups).forEach(function (g) {
+      var chip = document.createElement("span");
+      chip.className = "pv-chip grp";
+      chip.textContent = g + " = " + (DECLARED.groups[g] || []).join(", ");
+      line2.appendChild(chip);
+    });
+    host.appendChild(line2);
+  }
+
+  var line3 = document.createElement("div");
+  line3.style.marginTop = "5px";
+  line3.style.color = "#999";
+  line3.textContent = "이 모듈들에 대해 각 prefix의 ModuleProperties가 생성되고, 아래 값이 parent에서 상속됩니다. (전체 대상 모듈 " + mods.length + "개" + (groups.length ? ", 그룹 " + groups.length + "개" : "") + ")";
+  host.appendChild(line3);
+}
+
+/* ---------- render ---------- */
+function render() {
+  renderHighlights();
+  var lines = parseLines();
+  scanDeclarations(lines);
+  renderDeclarations();
+  refreshModuleSelect();
+  renderProblems(lines);
+  renderResult(lines);
+}
+
+function renderProblems(lines) {
+  var host = document.getElementById("pvProblems");
+  host.innerHTML = "";
+  var problems = [];
+  lines.forEach(function (l) {
+    if (l.blank || l.comment) return;
+    if (l.missingSeparator) { problems.push({ line: l.no, cls: "err", msg: "'=' 또는 ':' 구분자가 없습니다" }); return; }
+    if (!l.key) { problems.push({ line: l.no, cls: "err", msg: "키가 비어 있습니다" }); return; }
+    var c = classify(l.key);
+    if (!c) { problems.push({ line: l.no, cls: "warn", msg: "메타데이터에 없는 prefix 입니다: " + l.key }); return; }
+    if (!c.meta) { problems.push({ line: l.no, cls: "warn", msg: "'" + c.prefix + "' 에 없는 키: " + c.suffix }); return; }
+    // only warn when the name is unknown to BOTH the running app and this input
+    if (c.level === "module" && CONTEXT_LOADED && MODULE_NAMES.indexOf(c.target) === -1
+        && DECLARED.modules.indexOf(c.target) === -1) {
+      problems.push({ line: l.no, cls: "warn", msg: "현재 앱에 없는 모듈명: " + c.target + " (새로 추가되는 모듈이면 정상)" });
+    }
+    if (c.level === "group" && CONTEXT_LOADED && effectiveGroupNames().indexOf(c.target) === -1) {
+      problems.push({ line: l.no, cls: "warn", msg: "현재 앱에 없는 그룹명: " + c.target + " (module-groups로 선언하면 사라집니다)" });
+    }
+  });
+  if (!problems.length) {
+    var any = lines.some(function (l) { return l.key; });
+    if (any) { host.innerHTML = '<div class="pv-ok">문제 없음 - 모든 키가 메타데이터와 일치합니다.</div>'; }
+    return;
+  }
+  problems.forEach(function (p) {
+    var el = document.createElement("div");
+    el.className = "pv-problem " + p.cls;
+    var ln = document.createElement("span"); ln.className = "line"; ln.textContent = "L" + p.line;
+    var msg = document.createElement("span"); msg.textContent = p.msg;
+    el.appendChild(ln); el.appendChild(msg);
+    host.appendChild(el);
+  });
+}
+
+// Resolve every (prefix, key-suffix) the input touches, for every affected module.
+function renderResult(lines) {
+  var host = document.getElementById("pvResult");
+  var entries = [];
+  lines.forEach(function (l) {
+    if (l.blank || l.comment || !l.key || l.missingSeparator) return;
+    var c = classify(l.key);
+    if (!c || !c.meta) return;      // unknown keys are reported as problems, not resolved
+    if (c.level === "parent" && isStructuralSuffix(c.suffix)) return;   // declarations, shown separately
+    entries.push({ line: l.no, value: l.value, c: c });
+  });
+
+  var onlyAffected = document.getElementById("pvOnlyAffected").checked;
+  var hasBaseline = Object.keys(BASELINE).length > 0;
+
+  if (!entries.length && (onlyAffected || !hasBaseline)) {
+    host.innerHTML = DECLARED.modules.length
+      ? '<div class="pv-empty">모듈만 선언되어 있습니다. 값을 지정하는 키를 입력하거나, 위 체크박스를 꺼서 기본 생성값 전체를 보세요.</div>'
+      : (hasBaseline
+          ? '<div class="pv-empty">왼쪽에 properties를 입력하면 모듈별 적용값을 보여줍니다. 체크박스를 끄면 앱이 실제로 생성한 값 전체를 볼 수 있습니다.</div>'
+          : '<div class="pv-empty">왼쪽에 properties를 입력하면 모듈별로 어떤 값이 적용되는지 보여줍니다.</div>');
+    document.getElementById("pvResultSub").textContent = "";
+    return;
+  }
+  var targets = effectiveModules();
+  entries.forEach(function (e) {                        // include modules only named in the input
+    if (e.c.level === "module" && e.c.target && targets.indexOf(e.c.target) === -1) targets.push(e.c.target);
+  });
+  if (!targets.length) targets = ["<module>"];
+
+  var modFilter = moduleFilterValue();
+  if (modFilter) targets = targets.filter(function (m) { return m.toLowerCase().indexOf(modFilter) !== -1; });
+
+  var rows = [];
+  targets.forEach(function (moduleName) {
+    var group = effectiveGroupOf(moduleName);
+    var byKey = {};
+    entries.forEach(function (e) {
+      var applies =
+        e.c.level === "parent" ||
+        (e.c.level === "group" && e.c.target === group) ||
+        (e.c.level === "module" && e.c.target === moduleName);
+      if (!applies) return;
+      var id = e.c.prefix + "|" + e.c.suffix;
+      (byKey[id] = byKey[id] || []).push(e);
+    });
+    Object.keys(byKey).forEach(function (id) {
+      var list = byKey[id].sort(function (a, b) { return rank(a.c.level) - rank(b.c.level); });
+      var winner = list[list.length - 1];
+      rows.push({ module: moduleName, group: group, prefix: winner.c.prefix, suffix: winner.c.suffix,
+                  winner: winner, all: list });
+    });
+  });
+
+  // A module the input introduces has no computed values yet, and seeing what it will
+  // generate is the whole point of declaring it - so it is always shown in full.
+  var newModules = targets.filter(function (m) {
+    if (DECLARED.modules.indexOf(m) === -1) return false;
+    return !Object.keys(BASELINE).some(function (prefix) { return BASELINE[prefix].modules[m]; });
+  });
+  // Every prefix generates properties for every module, which buries the point when
+  // only one of them is being configured. Default to the prefixes the input touches.
+  var touched = {};
+  entries.forEach(function (e) { touched[e.c.prefix] = true; });
+  var hiddenPrefixes = 0;
+
+  if (onlyAffected) {
+    newModules.forEach(function (moduleName) {
+      Object.keys(BASELINE).forEach(function (prefix) {
+        if (!touched[prefix]) { hiddenPrefixes++; return; }
+        var b = baselineFor(prefix, moduleName);
+        if (!b) return;
+        Object.keys(b.values).forEach(function (suffix) {
+          var exists = rows.some(function (r) { return !r.parentRow && r.module === moduleName && r.prefix === prefix && r.suffix === suffix; });
+          if (!exists) rows.push({ module: moduleName, group: effectiveGroupOf(moduleName), prefix: prefix,
+                                   suffix: suffix, winner: null, all: [], inherited: b.inherited });
+        });
+      });
+    });
+  }
+
+  if (!onlyAffected) {
+    // 1) parent level: generated regardless of any module (not a module, so hidden while filtering)
+    if (!modFilter) Object.keys(BASELINE).forEach(function (prefix) {
+      Object.keys(BASELINE[prefix].parent).forEach(function (suffix) {
+        rows.push({ module: "parent", group: null, prefix: prefix, suffix: suffix, winner: null, all: [], parentRow: true });
+      });
+    });
+    // 2) every target module - declared ones are created too, inheriting parent
+    targets.forEach(function (moduleName) {
+      Object.keys(BASELINE).forEach(function (prefix) {
+        var b = baselineFor(prefix, moduleName);
+        if (!b) return;
+        Object.keys(b.values).forEach(function (suffix) {
+          var exists = rows.some(function (r) { return !r.parentRow && r.module === moduleName && r.prefix === prefix && r.suffix === suffix; });
+          if (!exists) rows.push({ module: moduleName, group: effectiveGroupOf(moduleName), prefix: prefix,
+                                   suffix: suffix, winner: null, all: [], inherited: b.inherited });
+        });
+      });
+    });
+  }
+
+  if (!rows.length) {
+    host.innerHTML = "";
+    var emptyEl = document.createElement("div");
+    emptyEl.className = "pv-empty";
+    emptyEl.textContent = modFilter
+      ? "'" + modFilter + "'" + " 에 해당하는 모듈이 없습니다."
+      : "입력한 키가 적용되는 모듈이 없습니다. (그룹/모듈명을 확인하세요)";
+    host.appendChild(emptyEl);
+    return;
+  }
+
+  var tbl = document.createElement("table");
+  tbl.className = "pv-tbl";
+  tbl.innerHTML = "<thead><tr><th>module</th><th>key</th><th>현재값 (앱 실제)</th><th>적용값</th><th>결정</th></tr></thead>";
+  var tb = document.createElement("tbody");
+  rows.sort(function (a, b) {
+    if (a.parentRow !== b.parentRow) return a.parentRow ? -1 : 1;
+    return a.module.localeCompare(b.module) || (a.prefix + a.suffix).localeCompare(b.prefix + b.suffix);
+  });
+  rows.forEach(function (r) {
+    var tr = document.createElement("tr");
+    if (r.parentRow) tr.className = "pv-parent-row";
+    tr.appendChild(cell(r.parentRow ? "parent (공통)" : r.module + (r.group ? "  (" + r.group + ")" : ""), "pv-target"));
+    // show the key that actually gets generated, including the module segment
+    var generatedKey = r.parentRow ? r.prefix + "." + r.suffix
+                                   : r.prefix + ".modules." + r.module + "." + r.suffix;
+    tr.appendChild(cell(generatedKey, "pv-key"));
+
+    var base = r.parentRow ? (BASELINE[r.prefix] ? BASELINE[r.prefix].parent[r.suffix] : undefined)
+                           : baselineValue(r.prefix, r.module, r.suffix);
+    var baseTd = cell(base === undefined ? "–" : base, base === undefined ? "pv-val pv-basemissing" : "pv-val pv-base");
+    if (r.inherited && base !== undefined) {
+      baseTd.classList.add("pv-inherited");
+      baseTd.title = "이 모듈은 앱에 아직 없어 parent 값을 그대로 상속합니다";
+      baseTd.appendChild(document.createTextNode(" (상속)"));
+    }
+    tr.appendChild(baseTd);
+
+    if (!r.all.length) {                       // baseline-only row (no input touches it)
+      tr.appendChild(cell("", "pv-val"));
+      tr.appendChild(cell("", ""));
+      tb.appendChild(tr);
+      return;
+    }
+    var applied = r.winner.value === "" ? "(빈 값)" : r.winner.value;
+    tr.appendChild(cell(applied, "pv-val" + (base !== undefined && String(base) !== applied ? " pv-changed" : "")));
+
+    var td = document.createElement("td");
+    r.all.forEach(function (e, i) {
+      var wrap = document.createElement("div");
+      if (i !== r.all.length - 1) wrap.className = "pv-overridden";
+      var badge = document.createElement("span");
+      badge.className = "pv-src " + e.c.level;
+      badge.textContent = e.c.level + (e.c.target ? ":" + e.c.target : "");
+      wrap.appendChild(badge);
+      wrap.appendChild(document.createTextNode(" L" + e.line));
+      td.appendChild(wrap);
+    });
+    tr.appendChild(td);
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);
+  host.innerHTML = "";
+  host.appendChild(tbl);
+  var fromInput = rows.filter(function (r) { return r.all.length; }).length;
+  var otherPrefixes = hiddenPrefixes && newModules.length ? Math.round(hiddenPrefixes / newModules.length) : 0;
+  document.getElementById("pvResultSub").textContent =
+    rows.length + " 항목 (입력 " + fromInput + ") · " + targets.length + " modules" +
+    (modFilter ? " (검색됨)" : "") +
+    (otherPrefixes ? " · 다른 prefix " + otherPrefixes + "개 생략" : "") +
+    (BASELINE_SOURCES.length ? "" : " · 앱 실제값 없음");
+}
+
+function rank(level) { return level === "parent" ? 0 : level === "group" ? 1 : 2; }
+
+function cell(text, cls) {
+  var td = document.createElement("td");
+  if (cls) td.className = cls;
+  td.textContent = text;
+  return td;
+}
+
+/* Completion is computed from what has been typed, not from a pre-expanded list:
+   the module/group segment is whatever the user wrote, so completion keeps working
+   for modules that do not exist yet (or when the live module list is unavailable). */
+function computeSuggestions(q) {
+  var out = [];
+  var lower = (q || "").toLowerCase();
+
+  PREFIXES.forEach(function (p) {
+    var pl = p.prefix.toLowerCase();
+
+    if (lower.indexOf(pl + ".") === 0) {
+      var rest = q.slice(p.prefix.length + 1);
+
+      // "<prefix>.modules." + partial name -> offer the known module/group names
+      var typingName = /^(modules|groups)\.([^.]*)$/.exec(rest);
+      if (typingName) {
+        var kind = typingName[1], partial = typingName[2].toLowerCase();
+        var names = kind === "modules" ? effectiveModules() : effectiveGroupNames();
+        names.forEach(function (n) {
+          if (partial && n.toLowerCase().indexOf(partial) === -1) return;
+          out.push({ name: p.prefix + "." + kind + "." + n + ".", type: "(" + kind.slice(0, -1) + ")",
+                     description: kind === "modules" ? (effectiveGroupOf(n) ? "group: " + effectiveGroupOf(n) : "") : (DECLARED.groups[n] || MODULE_GROUPS[n] || []).join(", "),
+                     partial: true });
+        });
+        return;
+      }
+
+      // "<prefix>.modules.<name>." + partial key -> the properties of that level
+      var afterName = /^(modules|groups)\.([^.]+)\.(.*)$/.exec(rest);
+      if (afterName) {
+        var kind2 = afterName[1], target = afterName[2], tail = afterName[3].toLowerCase();
+        var level = kind2 === "modules" ? "module" : "group";
+        p.keys.forEach(function (k) {
+          if (STRUCTURAL[k.name]) return;                       // parent/modules/groups: top level only
+          if (tail && k.name.toLowerCase().indexOf(tail) === -1) return;
+          out.push(cand(p.prefix + "." + kind2 + "." + target + "." + k.name, k, level, p.prefix, k.name, target));
+        });
+        return;
+      }
+
+      // parent level
+      var tail2 = rest.toLowerCase();
+      ["modules", "groups"].forEach(function (c) {
+        if (!p.container[c]) return;
+        if (tail2 && c.indexOf(tail2) !== 0) return;
+        out.push({ name: p.prefix + "." + c + ".", type: "(" + c + ")", description: c === "modules" ? "모듈별 설정" : "그룹별 설정", partial: true });
+      });
+      p.keys.forEach(function (k) {
+        if (tail2 && k.name.toLowerCase().indexOf(tail2) === -1) return;
+        out.push(cand(p.prefix + "." + k.name, k, "parent", p.prefix, k.name));
+      });
+      return;
+    }
+
+    // still typing the prefix itself
+    if (!lower || pl.indexOf(lower) !== -1) {
+      out.push({ name: p.prefix + ".", type: "(prefix)", description: "", partial: true });
+    }
+  });
+
+  // nothing structural matched - fall back to a plain substring search over every key
+  if (!out.length && lower) {
+    PREFIXES.forEach(function (p) {
+      p.keys.forEach(function (k) {
+        var full = p.prefix + "." + k.name;
+        if (full.toLowerCase().indexOf(lower) !== -1) out.push(cand(full, k, "parent", p.prefix, k.name));
+      });
+    });
+  }
+  return out;
+}
+
+/* ---------- find inside the editor ---------- */
+// paint the match backgrounds on the layer behind the textarea
+function renderHighlights() {
+  var ed = document.getElementById("pvEditor");
+  var layer = document.getElementById("pvHighlight");
+  if (!layer) return;
+  var text = ed.value;
+  layer.textContent = "";
+
+  var query = (document.getElementById("pvEditorFind") || {}).value || "";
+  if (!query) { layer.textContent = text; syncHighlightScroll(); return; }
+
+  var pos = 0;
+  FIND.matches.forEach(function (start, i) {
+    if (start > pos) layer.appendChild(document.createTextNode(text.slice(pos, start)));
+    var mark = document.createElement("mark");
+    if (i === FIND.index) mark.className = "cur";
+    mark.textContent = text.slice(start, start + query.length);
+    layer.appendChild(mark);
+    pos = start + query.length;
+  });
+  if (pos < text.length) layer.appendChild(document.createTextNode(text.slice(pos)));
+  syncHighlightScroll();
+}
+
+function syncHighlightScroll() {
+  var ed = document.getElementById("pvEditor");
+  var layer = document.getElementById("pvHighlight");
+  if (!layer) return;
+  // translate instead of scroll: the layer has no scrollbar, so scrollLeft would clamp
+  layer.style.transform = "translate(" + (-ed.scrollLeft) + "px, " + (-ed.scrollTop) + "px)";
+}
+
+
+var FIND = { matches: [], index: -1 };
+var EDITOR_LINE_HEIGHT = 20;      // must match #pvEditor line-height
+
+function findMatches(query) {
+  var text = document.getElementById("pvEditor").value.toLowerCase();
+  var needle = query.toLowerCase();
+  var out = [], at = 0;
+  if (!needle) return out;
+  while ((at = text.indexOf(needle, at)) !== -1) {
+    out.push(at);
+    at += needle.length;
+  }
+  return out;
+}
+
+function updateFind(jump) {
+  var input = document.getElementById("pvEditorFind");
+  var label = document.getElementById("pvFindCount");
+  var query = input.value;
+  FIND.matches = findMatches(query);
+
+  if (!query) { label.textContent = ""; input.classList.remove("miss"); FIND.index = -1; renderHighlights(); return; }
+  if (!FIND.matches.length) { label.textContent = "0"; input.classList.add("miss"); FIND.index = -1; renderHighlights(); return; }
+  input.classList.remove("miss");
+
+  if (jump) {
+    // start from wherever the caret is, so typing continues from the current spot
+    var caret = document.getElementById("pvEditor").selectionStart;
+    FIND.index = 0;
+    for (var i = 0; i < FIND.matches.length; i++) {
+      if (FIND.matches[i] >= caret) { FIND.index = i; break; }
+    }
+    revealMatch(query.length);
+  }
+  label.textContent = (FIND.index + 1) + " / " + FIND.matches.length;
+  renderHighlights();
+}
+
+function stepFind(delta) {
+  var input = document.getElementById("pvEditorFind");
+  if (!FIND.matches.length) { updateFind(true); return; }
+  FIND.index = (FIND.index + delta + FIND.matches.length) % FIND.matches.length;
+  revealMatch(input.value.length);
+  document.getElementById("pvFindCount").textContent = (FIND.index + 1) + " / " + FIND.matches.length;
+  renderHighlights();
+}
+
+// select the match and scroll it into view without stealing focus from the search box
+function revealMatch(length) {
+  if (FIND.index < 0 || FIND.index >= FIND.matches.length) return;
+  var ed = document.getElementById("pvEditor");
+  var start = FIND.matches[FIND.index];
+  ed.setSelectionRange(start, start + length);
+  var line = ed.value.slice(0, start).split("\n").length - 1;
+  ed.scrollTop = Math.max(0, (line - 3) * EDITOR_LINE_HEIGHT);
+}
+
+function onFindKeydown(e) {
+  if (e.key === "Enter") { e.preventDefault(); stepFind(e.shiftKey ? -1 : 1); }
+  else if (e.key === "ArrowDown") { e.preventDefault(); stepFind(1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); stepFind(-1); }
+  else if (e.key === "Escape") { e.preventDefault(); document.getElementById("pvEditor").focus(); }
+}
+
+/* ---------- autocomplete ---------- */
+var AC = { items: [], index: 0, from: 0, to: 0, open: false };
+
+function onEditorInput() { updateAc(); updateFind(false); render(); }
+
+function onEditorKeydown(e) {
+  if (e.ctrlKey && e.code === "Space") { e.preventDefault(); updateAc(true); return; }
+  if (!AC.open) return;
+  if (e.key === "ArrowDown") { e.preventDefault(); moveAc(1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); moveAc(-1); }
+  else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); acceptAc(); }
+  else if (e.key === "Escape") { hideAc(); }
+}
+
+function currentKeyToken() {
+  var ed = document.getElementById("pvEditor");
+  var pos = ed.selectionStart;
+  var text = ed.value;
+  var lineStart = text.lastIndexOf("\n", pos - 1) + 1;
+  var lineEnd = text.indexOf("\n", pos); if (lineEnd === -1) lineEnd = text.length;
+  var line = text.slice(lineStart, lineEnd);
+  var caretInLine = pos - lineStart;
+  var sep = line.search(/[=:]/);
+  if (sep !== -1 && caretInLine > sep) return null;                   // caret is in the value part
+  if (/^\s*[#!]/.test(line)) return null;
+  var keyPart = line.slice(0, sep === -1 ? caretInLine : Math.min(caretInLine, sep));
+  return { text: keyPart.trim(), from: lineStart, to: lineStart + keyPart.length };
+}
+
+function updateAc(force) {
+  var tok = currentKeyToken();
+  if (!tok || (!tok.text && !force)) { hideAc(); return; }
+  var items = computeSuggestions(tok.text).slice(0, 200);
+  if (!items.length) { hideAc(); return; }
+  AC.items = items; AC.index = 0; AC.from = tok.from; AC.to = tok.to; AC.open = true;
+  renderAc();
+}
+
+function renderAc() {
+  var box = document.getElementById("pvAc");
+  box.innerHTML = "";
+  AC.items.slice(0, 60).forEach(function (it, i) {
+    var el = document.createElement("div");
+    el.className = "pv-ac-item" + (i === AC.index ? " sel" : "");
+    var k = document.createElement("span"); k.className = "k"; k.textContent = it.name;
+    var t = document.createElement("span"); t.className = "t";
+    t.textContent = shortType(it.type) + (it.defaultValue !== undefined && it.defaultValue !== null ? "  = " + it.defaultValue : "");
+    el.appendChild(k); el.appendChild(t);
+    if (it.description) { var d = document.createElement("span"); d.className = "d"; d.textContent = it.description; el.appendChild(d); }
+    el.addEventListener("mousedown", function (ev) { ev.preventDefault(); AC.index = i; acceptAc(); });
+    box.appendChild(el);
+  });
+  box.classList.add("show");
+  positionAc();
+}
+
+function positionAc() {
+  var ed = document.getElementById("pvEditor");
+  var box = document.getElementById("pvAc");
+  var before = ed.value.slice(0, AC.to);
+  var line = before.split("\n").length;
+  var top = Math.min((line * 20) + 14 - ed.scrollTop, ed.clientHeight - 40);
+  box.style.left = "14px";
+  box.style.top = Math.max(6, top) + "px";
+}
+
+function moveAc(delta) {
+  AC.index = (AC.index + delta + Math.min(AC.items.length, 60)) % Math.min(AC.items.length, 60);
+  renderAc();
+  var sel = document.querySelector("#pvAc .pv-ac-item.sel");
+  if (sel) sel.scrollIntoView({ block: "nearest" });
+}
+
+// The value this key already has in the application's properties files, as written.
+function configuredValueOf(name) {
+  var hit = (APP_PROPERTIES || []).filter(function (entry) { return entry.name === name; })[0];
+  if (!hit) return null;
+  return (hit.value === null || hit.value === undefined) ? "" : String(hit.value);
+}
+
+function acceptAc() {
+  if (!AC.open || !AC.items.length) return;
+  var pick = AC.items[AC.index];
+  var ed = document.getElementById("pvEditor");
+  var text = ed.value;
+  var lineEnd = text.indexOf("\n", AC.to); if (lineEnd === -1) lineEnd = text.length;
+  var rest = text.slice(AC.to, lineEnd);
+  // if that key is already configured, bring its current value along
+  var existing = pick.partial || /[=:]/.test(rest) ? null : configuredValueOf(pick.name);
+  var insert = pick.name + (pick.partial || /[=:]/.test(rest) ? "" : "=" + (existing === null ? "" : existing));
+  ed.value = text.slice(0, AC.from) + insert + text.slice(AC.to);
+  var caret = AC.from + insert.length;
+  ed.setSelectionRange(caret, caret);
+  hideAc();
+  ed.focus();
+  render();
+  if (pick.partial) updateAc(true);      // keep going: module name -> key
+}
+
+function hideAc() { AC.open = false; document.getElementById("pvAc").classList.remove("show"); }
+
+/* Load what this application actually has configured, so the viewer starts from
+   the project's own properties instead of an empty editor. */
+var APP_PROPERTIES = null;      // [{name, value, source}]
+
+// Ask for the module-aware prefixes and their root namespace, so settings that live
+// next to them ("<root>.something-else") are loaded too instead of silently dropped.
+function queryPrefixes() {
+  var roots = {};
+  PREFIXES.forEach(function (p) { roots[p.prefix.split(".")[0]] = true; });
+  var out = Object.keys(roots);
+
+  // keep any prefix a root does not already cover; sending all of them made the
+  // query string huge (24 parameters) for no gain
+  PREFIXES.forEach(function (p) {
+    var covered = out.some(function (candidate) {
+      return p.prefix === candidate || p.prefix.indexOf(candidate + ".") === 0;
+    });
+    if (!covered) out.push(p.prefix);
+  });
+  return out;
+}
+
+async function fetchApplicationProperties() {
+  if (!PREFIXES.length) return [];
+  var qs = queryPrefixes().map(function (prefix) { return "prefix=" + encodeURIComponent(prefix); }).join("&");
+  var url = devcheckEndpoint("applicationProperties", "devcheck/metadata/applicationProperties");
+  var res = await fetch(url + "?" + qs, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  var body = await res.json();
+  return body.properties || [];
+}
+
+async function preloadApplicationProperties() {
+  try { APP_PROPERTIES = await fetchApplicationProperties(); }
+  catch (e) { APP_PROPERTIES = null; }
+}
+
+async function loadProjectProperties() {
+  var btn = document.getElementById("pvLoadBtn");
+  var label = btn.textContent;
+  btn.disabled = true; btn.textContent = "불러오는 중…";
+  try {
+    if (!APP_PROPERTIES) APP_PROPERTIES = await fetchApplicationProperties();
+    var configOnly = document.getElementById("pvConfigOnly").checked;
+    var list = (APP_PROPERTIES || []).filter(function (p) { return !configOnly || p.kind !== "system"; });
+    if (!list.length) {
+      toastMsg(configOnly
+        ? "해당 prefix로 설정된 properties가 없습니다. ('시스템/환경변수 제외'를 꺼보세요)"
+        : "이 애플리케이션에 설정된 해당 prefix properties가 없습니다.");
+      return;
+    }
+    // group by the property source so it is obvious where each line came from
+    var bySource = {};
+    list.forEach(function (p) {
+      (bySource[p.source] = bySource[p.source] || []).push(p);
+    });
+    var lines = [];
+    Object.keys(bySource).forEach(function (src) {
+      lines.push("# --- " + src + " ---");
+      bySource[src].sort(function (a, b) { return a.name.localeCompare(b.name); })
+        .forEach(function (p) {
+          var raw = (p.value === null || p.value === undefined) ? "" : p.value;
+          var resolved = appResolved(p);
+          // the file value is what goes in; note the resolved one when they differ
+          if (resolved !== undefined && resolved !== null && String(resolved) !== String(raw)) {
+            lines.push("# (해석값: " + resolved + ")");
+          }
+          lines.push(p.name + "=" + raw);
+        });
+      lines.push("");
+    });
+    document.getElementById("pvEditor").value = lines.join("\n");
+    render();
+    toastMsg(list.length + "개 properties를 불러왔습니다." +
+      (configOnly && APP_PROPERTIES.length > list.length
+        ? " (시스템/환경변수 " + (APP_PROPERTIES.length - list.length) + "개 제외)" : ""));
+  } catch (e) {
+    toastMsg("프로젝트 properties를 불러오지 못했습니다: " + e);
+  } finally {
+    btn.disabled = false; btn.textContent = label;
+  }
+}
+
+function toastMsg(msg) {
+  var el = document.getElementById("pvToast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el.__timer);
+  el.__timer = setTimeout(function () { el.classList.remove("show"); }, 2200);
+}
+
+/* ---------- module filter / module copy ---------- */
+
+function moduleFilterValue() {
+  var el = document.getElementById("pvModuleFilter");
+  return el ? el.value.trim().toLowerCase() : "";
+}
+
+// keep the source list in sync with whatever modules are known right now
+function refreshModuleSelect() {
+  var sel = document.getElementById("pvCopySource");
+  if (!sel) return;
+  var current = sel.value;
+  var modules = effectiveModules();
+  sel.innerHTML = "";
+  modules.forEach(function (m) {
+    var o = document.createElement("option");
+    o.value = m;
+    o.textContent = m + (effectiveGroupOf(m) ? "  (" + effectiveGroupOf(m) + ")" : "");
+    sel.appendChild(o);
+  });
+  if (modules.indexOf(current) !== -1) sel.value = current;
+  sel.disabled = !modules.length;
+  document.getElementById("pvCopyBtn").disabled = !modules.length;
+}
+
+/* Copy one module's settings to a new module name.
+   By default the lines written for the source module are duplicated; with
+   "적용값 전체" the module's whole effective value set is written out instead. */
+// Loaded properties are grouped under a "# --- <property source> ---" header, so a
+// copied line keeps the comment telling where the original value came from.
+// copy helper with a fallback for browsers that refuse the async clipboard API
+function copyTextToClipboard(text, done) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallbackCopy(text)); });
+    return;
+  }
+  done(fallbackCopy(text));
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  var ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+function sectionCommentOf(lines, index) {
+  for (var i = index - 1; i >= 0; i--) {
+    if (lines[i].comment) return lines[i].raw.trim();
+  }
+  return null;
+}
+
+// where the running application defined this property, when it is known
+function appSourceComment(name) {
+  var hit = (APP_PROPERTIES || []).filter(function (entry) { return entry.name === name; })[0];
+  return hit ? "# --- " + hit.source + " ---" : null;
+}
+
+function copyModule() {
+  var src = document.getElementById("pvCopySource").value;
+  var dst = document.getElementById("pvCopyTarget").value.trim();
+  var full = document.getElementById("pvCopyFull").checked;
+
+  if (!src) { toastMsg("복사할 원본 모듈을 선택하세요."); return; }
+  if (!dst) { toastMsg("새 모듈 이름을 입력하세요."); return; }
+  if (dst === src) { toastMsg("원본과 다른 이름을 입력하세요."); return; }
+  if (!/^[A-Za-z0-9_-]+$/.test(dst)) { toastMsg("모듈 이름에는 영문/숫자/-/_ 만 사용할 수 있습니다."); return; }
+
+  var lines = parseLines();
+  var generated = [];
+
+  if (full) {
+    Object.keys(BASELINE).sort().forEach(function (prefix) {
+      var b = baselineFor(prefix, src);
+      if (!b) return;
+      Object.keys(b.values).sort().forEach(function (suffix) {
+        var v = b.values[suffix];
+        if (v === undefined || v === null || v === "null") return;   // nothing to set
+        generated.push({ line: prefix + ".modules." + dst + "." + suffix + "=" + v,
+                         from: appSourceComment(prefix + ".modules." + src + "." + suffix) });
+      });
+    });
+  } else {
+    // Default: copy what is configured for this module in the properties files
+    // (values as written), then let anything typed in the editor take precedence.
+    var byKey = {}, order = [];
+    function put(prefix, suffix, value, from) {
+      var id = prefix + "|" + suffix;
+      if (order.indexOf(id) === -1) order.push(id);
+      byKey[id] = { line: prefix + ".modules." + dst + "." + suffix + "=" + value, from: from };
+    }
+
+    (APP_PROPERTIES || []).forEach(function (entry) {
+      var c = classify(entry.name);
+      if (!c || c.level !== "module" || c.target !== src) return;
+      var raw = (entry.value === null || entry.value === undefined) ? "" : entry.value;
+      put(c.prefix, c.suffix, raw, "# --- " + entry.source + " ---");
+    });
+
+    lines.forEach(function (l, idx) {
+      if (l.blank || l.comment || !l.key || l.missingSeparator) return;
+      var c = classify(l.key);
+      if (!c || c.level !== "module" || c.target !== src) return;
+      put(c.prefix, c.suffix, l.value, sectionCommentOf(lines, idx) || appSourceComment(l.key));
+    });
+
+    order.forEach(function (id) { generated.push(byKey[id]); });
+  }
+
+  if (!generated.length) {
+    toastMsg(full
+      ? "'" + src + "' 의 적용값을 찾을 수 없습니다. (앱 실제값을 불러오지 못한 상태)"
+      : "'" + src + "' 에 설정된 properties가 없습니다. ('미설정 값도 포함'을 켜보세요)");
+    return;
+  }
+
+  // the module still has to be declared somewhere - say so instead of editing the input
+  var declLine = null;
+  lines.forEach(function (l) {
+    if (l.blank || l.comment || !l.key) return;
+    var c = classify(l.key);
+    if (c && c.level === "parent" && c.suffix === "module-name-set") declLine = l;
+  });
+  var needsDeclare = !declLine || splitList(declLine.value).indexOf(dst) === -1;
+
+  var out = ["# === " + src + " -> " + dst + " 복사" + (full ? " (미설정 값 포함)" : " (설정된 값)") + " ==="];
+  var lastFrom = null;
+  generated.forEach(function (g) {
+    var from = g.from || "# --- (원본 위치 정보 없음) ---";
+    if (from !== lastFrom) { out.push(from); lastFrom = from; }
+    out.push(g.line);
+  });
+  if (needsDeclare) {
+    out.push("# (확인) " + dst + " 은(는) module-name-set 등에 선언되어야 생성됩니다");
+  }
+
+  copyTextToClipboard(out.join("\n"), function (ok) {
+    toastMsg(ok
+      ? generated.length + "개 항목을 클립보드에 복사했습니다." + (needsDeclare ? " (모듈 선언 필요)" : "")
+      : "클립보드 복사에 실패했습니다.");
+  });
+}
+
+/* ---------- misc ---------- */
+function clearEditor() { document.getElementById("pvEditor").value = ""; render(); }
+
+function goToList() {
+  var ref = document.referrer || "";
+  if (ref && ref.indexOf(location.origin) === 0 && /\/index(\?|#|$)/.test(ref) && history.length > 1) history.back();
+  else location.href = "index";
+}
+
+document.addEventListener("keydown", function (e) {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === "f" || e.key === "F")) {
+    var find = document.getElementById("pvEditorFind");
+    if (find) { e.preventDefault(); find.focus(); find.select(); }
+  }
+});
+</script>
+</body>
+</html>

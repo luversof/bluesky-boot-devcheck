@@ -29,6 +29,11 @@ public class DevCheckCoreViewController {
 		return forwardToStaticResource("static/_check/devCheckJsonView.html");
 	}
 
+	@GetMapping("/propertiesView")
+	public ResponseEntity<Resource> propertiesView() {
+		return forwardToStaticResource("static/_check/devCheckPropertiesView.html");
+	}
+
 	private ResponseEntity<Resource> forwardToStaticResource(String resourcePath) {
 		ClassPathResource resource = new ClassPathResource(resourcePath);
 		if (!resource.exists()) {

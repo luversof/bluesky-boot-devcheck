@@ -277,6 +277,7 @@ async function load(url) {
   hideMessage();
   document.getElementById("jvUrl").value = url;
   document.getElementById("jvRawOpen").href = url;
+  setPageParam("url", url);
 
   if (url.indexOf("{") !== -1) {
     clearTree();
@@ -416,10 +417,13 @@ function doSearch() {
 }
 
 // Reflect the current search into the URL (?...&q=) so it can be copied/shared.
-function updateUrlQuery(q) {
+function updateUrlQuery(q) { setPageParam("q", q); }
+
+// Keep the page address in step with what is shown (?url=..&q=..) so it can be shared as is.
+function setPageParam(name, value) {
   try {
     var params = new URLSearchParams(location.search);
-    if (q) params.set("q", q); else params.delete("q");
+    if (value) params.set(name, value); else params.delete(name);
     var qs = params.toString();
     history.replaceState(null, "", location.pathname + (qs ? "?" + qs : "") + location.hash);
   } catch (e) { /* restricted origin (file:// preview): ignore */ }

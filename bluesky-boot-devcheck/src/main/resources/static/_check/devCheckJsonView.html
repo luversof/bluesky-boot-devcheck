@@ -168,11 +168,13 @@ table.jv-tbl td.jv-col-mod.jv-child.jv-last::before { content: "└"; }
         <button type="button" class="jv-ex" onclick="applyExample('modules >> lin')">modules &gt;&gt; lin</button>
         <button type="button" class="jv-ex" onclick="applyExample('datasources > url:jdbc')">datasources &gt; url:jdbc</button>
       </div>
-      <div class="jv-note">검색 중 <b>⊞ 결과 하위 펼치기</b>를 누르면 매칭된 항목의 하위 전체를 펼쳐볼 수 있습니다. <b>Ctrl+F</b>로 검색창 이동, <b>Enter</b>로 즉시 검색.</div>
+      <div class="jv-note">검색 중 <b>⊞ 결과 하위 펼치기</b>를 누르면 매칭된 항목의 하위 전체를 펼쳐볼 수 있습니다. <code>A &gt; B</code> 검색에서 <b>⊞ 상위 항목 전체</b>를 켜면 B를 만족한 A 항목의 하위를 모두 봅니다. <b>Ctrl+F</b>로 검색창 이동, <b>Enter</b>로 즉시 검색.</div>
     </div>
     <div class="jv-toolbar">
       <button id="jvExpandAll" class="jv-btn" onclick="toggleExpandAll()">▼ 모두 접기</button>
       <button id="jvExpandResults" class="jv-btn active" onclick="toggleExpandResults()" style="display:none;">⊟ 매칭만 보기</button>
+      <button id="jvScopeExpand" class="jv-btn" onclick="toggleScopeExpand()" style="display:none;"
+              title="A &gt; B 로 검색할 때, 조건 B를 만족한 A 항목의 하위를 모두 표시합니다">⊞ 상위 항목 전체</button>
       <span id="jvSummary" class="jv-summary"></span>
     </div>
     <div id="jvPathbar" class="jv-pathbar">
@@ -235,6 +237,7 @@ var __selected = null;
 var __parsed = { empty: true, key: "", keyTerms: [], valTerms: [] };
 var __renderedStart = -1, __renderedEnd = -1;
 var SEARCH_EXPAND_MODE = true;   // default: reveal full sub-items of matched branches
+var SCOPE_EXPAND_MODE = false;   // "A > B": show all of every A that contains a match for B
 
 /* ---------- helpers ---------- */
 function typeOf(v) {
@@ -408,6 +411,8 @@ function doSearch() {
 
   var resBtn = document.getElementById("jvExpandResults");
   resBtn.style.display = __parsed.empty ? "none" : "";
+  var scopeBtn = document.getElementById("jvScopeExpand");
+  scopeBtn.style.display = !__parsed.empty && __parsed.segments.length > 1 ? "" : "none";
 
   flattenRows();
   renderRows(true);
@@ -499,6 +504,10 @@ function filterNode(node, parsed, forceShow, segIdx, directOk) {
     return selfMatch ? 1 : 0;
   }
 
+  // In "A > B", the node that satisfied A (the segment right above the target) is the scope:
+  // with the option on, a scope that holds a match is shown in full.
+  var isScope = q && childSegIdx !== segIdx && childSegIdx === parsed.segments.length - 1;
+
   // Only a MATCHED node opens up its own subtree, and only in "결과 하위 펼치기" mode.
   // (Ancestors on the path to a match must not drag their other children into view.)
   var childForce = forceShow || (selfMatch && SEARCH_EXPAND_MODE);
@@ -507,10 +516,27 @@ function filterNode(node, parsed, forceShow, segIdx, directOk) {
     childMatches += filterNode(node.children[i], parsed, childForce, childSegIdx, childDirectOk);
   }
   var hasDescendantMatch = childMatches > 0;
+  if (isScope && SCOPE_EXPAND_MODE && hasDescendantMatch) revealSubtree(node);
   node.hidden = !(!q || forceShow || selfMatch || hasDescendantMatch);
   node.expanded = true;                               // everything still visible stays open
 
   return childMatches + (selfMatch ? 1 : 0);
+}
+
+function revealSubtree(node) {
+  if (!node.isContainer) return;
+  for (var i = 0; i < node.children.length; i++) {
+    var c = node.children[i];
+    c.hidden = false;
+    if (c.isContainer) { c.expanded = true; revealSubtree(c); }
+  }
+}
+
+function toggleScopeExpand() {
+  SCOPE_EXPAND_MODE = !SCOPE_EXPAND_MODE;
+  document.getElementById("jvScopeExpand").classList.toggle("active", SCOPE_EXPAND_MODE);
+  setPageParam("scope", SCOPE_EXPAND_MODE ? "1" : "");
+  doSearch();
 }
 
 function toggleExpandResults() {
@@ -1067,6 +1093,10 @@ window.onload = function () {
   var url = getParam("url");
   var q = getParam("q");
   if (q) document.getElementById("jvSearch").value = q;
+  if (getParam("scope") === "1") {
+    SCOPE_EXPAND_MODE = true;
+    document.getElementById("jvScopeExpand").classList.add("active");
+  }
   if (url) { load(url); }
   else { showMessage("조회할 URL이 없습니다. 위 주소창에 /_check/... 엔드포인트를 입력하고 [조회]를 누르세요.", false); }
 };

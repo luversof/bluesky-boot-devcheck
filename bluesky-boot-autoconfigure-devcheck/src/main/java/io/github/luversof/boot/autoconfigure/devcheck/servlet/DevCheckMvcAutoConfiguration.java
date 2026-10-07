@@ -80,7 +80,13 @@ public class DevCheckMvcAutoConfiguration implements WebMvcConfigurer {
 								|| handlerType.isAnnotationPresent(DevCheckViewController.class)
 							)
 						) {
-							return RequestMappingInfo.paths(pathPrefixes).build().combine(mappingInfo);
+							// prefix 도 이 handler mapping 의 매칭 방식(PathPatternParser / AntPathMatcher)으로 만든다.
+							// 기본 옵션으로 만들면 PathPattern 조건이 되어, ant-path-matcher 를 쓰는 앱에서는 문자열 패턴
+							// 조건과 합쳐지지 않고 "Neither PathPatterns nor String patterns condition" 으로 기동이 실패한다.
+							return RequestMappingInfo.paths(pathPrefixes)
+								.options(getBuilderConfiguration())
+								.build()
+								.combine(mappingInfo);
 						}
 						return mappingInfo;
 					}

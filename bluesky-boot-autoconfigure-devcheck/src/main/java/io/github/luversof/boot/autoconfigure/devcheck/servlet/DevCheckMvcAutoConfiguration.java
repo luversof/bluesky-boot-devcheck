@@ -2,12 +2,12 @@ package io.github.luversof.boot.autoconfigure.devcheck.servlet;
 
 import java.lang.reflect.Method;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -18,6 +18,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import io.github.luversof.boot.devcheck.DevCheckProperties;
 import io.github.luversof.boot.devcheck.annotation.DevCheckApiController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckViewController;
@@ -32,11 +33,15 @@ import jakarta.servlet.Servlet;
 @AutoConfiguration
 @ConditionalOnClass({ Servlet.class, DispatcherServlet.class })
 @ConditionalOnWebApplication(type = Type.SERVLET)
-@ConditionalOnProperty(prefix = "bluesky-boot.dev-check", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "bluesky-boot.dev-check", name = "enabled", havingValue = "true")
+@EnableConfigurationProperties(DevCheckProperties.class)
 public class DevCheckMvcAutoConfiguration implements WebMvcConfigurer {
 
-	@Value("${bluesky-boot.dev-check.path-prefixes}")
-	private String[] pathPrefixes;
+	private final String[] pathPrefixes;
+
+	public DevCheckMvcAutoConfiguration(DevCheckProperties devCheckProperties) {
+		this.pathPrefixes = devCheckProperties.getPathPrefixes();
+	}
 
 	@Bean
 	DevCheckInfoMvcService blueskyBootDevCheckInfoMvcService() {

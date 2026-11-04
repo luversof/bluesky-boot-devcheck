@@ -1,7 +1,5 @@
 package io.github.luversof.boot.devcheck.controller;
 
-import java.time.Duration;
-
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
@@ -39,6 +37,7 @@ public class DevCheckCoreViewController {
 		if (!resource.exists()) {
 			return ResponseEntity.notFound().build();
 		}
-		return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).cacheControl(CacheControl.maxAge(Duration.ofDays(365))).body(resource);
+		// 라이브러리를 올리면 화면도 바로 바뀌어야 한다 - 예전 365일 캐시는 옛 화면을 붙잡았다
+		return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).cacheControl(CacheControl.noCache()).body(resource);
 	}
 }

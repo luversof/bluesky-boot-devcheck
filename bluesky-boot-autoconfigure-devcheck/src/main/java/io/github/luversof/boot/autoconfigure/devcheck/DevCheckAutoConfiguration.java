@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 
 import io.github.luversof.boot.devcheck.DevCheckProperties;
 import io.github.luversof.boot.devcheck.aspect.DevCheckControllerAspect;
@@ -15,8 +14,7 @@ import io.github.luversof.boot.devcheck.service.DevCheckUtilInfoService;
 
 @AutoConfiguration
 @EnableConfigurationProperties(DevCheckProperties.class)
-@PropertySource("classpath:dev-check.properties")
-@ConditionalOnProperty(prefix = "bluesky-boot.dev-check", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "bluesky-boot.dev-check", name = "enabled", havingValue = "true")
 public class DevCheckAutoConfiguration {
 	
 	@Configuration(proxyBeanMethods = false)

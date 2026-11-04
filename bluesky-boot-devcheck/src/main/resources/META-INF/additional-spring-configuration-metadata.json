@@ -1,0 +1,12 @@
+{
+  "properties": [
+    {
+      "name": "bluesky-boot.dev-check.base-package-list",
+      "type": "java.util.List<java.lang.String>",
+      "deprecation": {
+        "replacement": "bluesky-boot.dev-check.base-packages",
+        "level": "error"
+      }
+    }
+  ]
+}

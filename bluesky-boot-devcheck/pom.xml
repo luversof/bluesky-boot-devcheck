@@ -41,23 +41,10 @@
 		</dependency>
 		<!-- (e) servlet web -->
 
-		<!-- (s) webflux -->
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webflux</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<!-- (e) webflux -->
-		
-		<!-- (s) test -->
+<!-- (s) test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<!-- (e) test -->

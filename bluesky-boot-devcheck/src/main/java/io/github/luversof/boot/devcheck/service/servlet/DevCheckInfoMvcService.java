@@ -4,10 +4,10 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.BeansException;
@@ -33,7 +33,8 @@ import io.github.luversof.boot.devcheck.util.DevCheckUtil;
 
 public class DevCheckInfoMvcService implements ApplicationContextAware {
 	
-	private Map<String, List<DevCheckInfo>> devCheckInfoListMap = new HashMap<>();
+	/** path prefix &rarr; 목록. 요청 스레드 여럿이 동시에 채울 수 있다. */
+	private final Map<String, List<DevCheckInfo>> devCheckInfoListMap = new ConcurrentHashMap<>();
 	
 	private ApplicationContext applicationContext;
 	
@@ -48,19 +49,17 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
 		var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
 		var currentRequestURI = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest().getRequestURI();
 		var currentPathPrefix = DevCheckUtil.getCurrentPathPrefix(devCheckProperties.getPathPrefixes(), currentRequestURI);
-		if (devCheckInfoListMap.containsKey(currentPathPrefix)) {
-			return devCheckInfoListMap.get(currentPathPrefix);
-		}
-		
+		return devCheckInfoListMap.computeIfAbsent(currentPathPrefix == null ? "" : currentPathPrefix, prefix -> createDevCheckInfoList());
+	}
+
+	private List<DevCheckInfo> createDevCheckInfoList() {
 		var devCheckInfoList = new ArrayList<DevCheckInfo>();
-		
+
 		var handlerMethodMap = getTargetHandlerMethodMap();
 		handlerMethodMap.entrySet().stream()
 			.filter(map -> (!map.getValue().hasMethodAnnotation(DevCheckDescription.class) || (map.getValue().hasMethodAnnotation(DevCheckDescription.class) && map.getValue().getMethodAnnotation(DevCheckDescription.class).displayable())))
 			.forEach(map -> devCheckInfoList.add(createDevCheckInfo(map)));
-		var sortedDevCheckInfoList = devCheckInfoList.stream().sorted(Comparator.comparing(DevCheckInfo::beanName).thenComparing(devCheckInfo -> devCheckInfo.urlList().get(0))).toList();
-		devCheckInfoListMap.put(currentPathPrefix, sortedDevCheckInfoList);
-		return sortedDevCheckInfoList;
+		return devCheckInfoList.stream().sorted(Comparator.comparing(DevCheckInfo::beanName).thenComparing(devCheckInfo -> devCheckInfo.urlList().get(0))).toList();
 	}
 
 	/**
@@ -74,7 +73,8 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
 			.map(RequestMappingHandlerMapping::getHandlerMethods)
 			.map(Map::entrySet)
 			.flatMap(Collection::stream)
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			// 같은 매핑이 handler mapping 여럿에 있으면 첫 것을 쓴다(예전에는 중복 키로 예외가 났다)
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first));
 	}
 	
 	/**

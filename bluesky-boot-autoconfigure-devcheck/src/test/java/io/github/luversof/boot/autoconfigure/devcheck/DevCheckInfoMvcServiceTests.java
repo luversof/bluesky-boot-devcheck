@@ -13,6 +13,7 @@ import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -49,6 +50,38 @@ class DevCheckInfoMvcServiceTests {
           assertThat(list).isNotEmpty();
           assertThat(service.getDevCheckInfoList()).isSameAs(list);
         });
+  }
+
+  @Test
+  void listsControllersWithAntPathMatcher() {
+    this.contextRunner
+        .withPropertyValues("spring.mvc.pathmatch.matching-strategy=ant-path-matcher")
+        .run(context -> {
+          // ant 방식이면 PathPattern 조건이 없다 - 예전에는 이 때문에 목록이 비었다
+          assertThat(
+                  context.getBean(RequestMappingHandlerMapping.class).getHandlerMethods().keySet())
+              .isNotEmpty()
+              .allMatch(info -> info.getPathPatternsCondition() == null);
+          RequestContextHolder.setRequestAttributes(
+              new ServletRequestAttributes(new MockHttpServletRequest("GET", "/_check/index")));
+
+          assertThat(context.getBean(DevCheckInfoMvcService.class).getDevCheckInfoList())
+              .isNotEmpty();
+        });
+  }
+
+  @Test
+  void queryStartsWithQuestionMarkAfterPathVariable() throws NoSuchMethodException {
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest("GET", "/_check/index")));
+    var method = UrlSample.class.getDeclaredMethod("find", String.class, String.class);
+
+    assertThat(new DevCheckInfoMvcService().getUrlWithParameter("/_check/items/{id}", method))
+        .isEqualTo("/_check/items/{id}?name={name}");
+  }
+
+  static class UrlSample {
+    public void find(@PathVariable String id, String name) {}
   }
 
   @Configuration(proxyBeanMethods = false)

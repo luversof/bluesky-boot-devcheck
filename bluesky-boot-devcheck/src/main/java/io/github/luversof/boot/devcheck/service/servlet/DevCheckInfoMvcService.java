@@ -2,6 +2,7 @@ package io.github.luversof.boot.devcheck.service.servlet;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -16,14 +17,12 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.http.MediaType;
-import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import org.springframework.web.util.pattern.PathPattern;
 
 import io.github.luversof.boot.devcheck.DevCheckProperties;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
@@ -101,20 +100,13 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
    * @return
    */
   private Map<RequestMappingInfo, HandlerMethod> getTargetHandlerMethodMap() {
-    var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
+    var pathPrefixes = applicationContext.getBean(DevCheckProperties.class).getPathPrefixes();
+    // getPatternValues 는 PathPattern·AntPathMatcher 두 방식 모두에서 채워진다
     return getHandlerMethodMap().entrySet().stream()
         .filter(handlerMapping ->
             handlerMapping.getValue().getBeanType().isAnnotationPresent(DevCheckController.class)
-                && (handlerMapping.getKey().getPathPatternsCondition() != null
-                    && handlerMapping.getKey().getPathPatternsCondition().getPatterns().stream()
-                        .anyMatch(pattern -> {
-                          for (var pathPrefix : devCheckProperties.getPathPrefixes()) {
-                            if (pattern.getPatternString().startsWith(pathPrefix)) {
-                              return true;
-                            }
-                          }
-                          return false;
-                        }))
+                && handlerMapping.getKey().getPatternValues().stream()
+                    .anyMatch(pattern -> Arrays.stream(pathPrefixes).anyMatch(pattern::startsWith))
                 && handlerMapping.getKey().getProducesCondition().getExpressions().stream()
                     .anyMatch(mediaTypeExpression ->
                         mediaTypeExpression.getMediaType().equals(MediaType.APPLICATION_JSON)))
@@ -132,15 +124,8 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
     var urlList = new ArrayList<String>();
     String description = null;
 
-    var pathPatternsCondition = requestMappingInfo.getPathPatternsCondition();
-    if (pathPatternsCondition == null) {
-      Assert.notNull(
-          pathPatternsCondition, "patternsCondition or pathPatternsCondition must not null");
-    }
-
-    for (PathPattern pattern : pathPatternsCondition.getPatterns()) {
-      urlList.add(
-          getUrlWithParameter(pattern.getPatternString(), handlerMethodMap.getValue().getMethod()));
+    for (String pattern : requestMappingInfo.getPatternValues()) {
+      urlList.add(getUrlWithParameter(pattern, handlerMethod.getMethod()));
     }
 
     var methodAnnotation = handlerMethod.getMethodAnnotation(DevCheckDescription.class);
@@ -170,17 +155,21 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
     stringBuilder.append(pattern);
 
     var parameterNames = parameterNameDiscoverer.getParameterNames(method);
-    if (parameterNames != null && parameterNames.length > 0) {
+    if (parameterNames != null) {
+      var parameters = method.getParameters();
+      // 첫 query 파라미터에 "?" - 앞쪽 path variable 을 건너뛰어도 그렇다
+      var separator = "?";
       for (int i = 0; i < parameterNames.length; i++) {
-        if (method.getParameters()[i].isAnnotationPresent(PathVariable.class)) {
+        if (parameters[i].isAnnotationPresent(PathVariable.class)) {
           continue;
         }
         stringBuilder
-            .append(i == 0 ? "?" : "&")
+            .append(separator)
             .append(parameterNames[i])
             .append("={")
             .append(parameterNames[i])
             .append("}");
+        separator = "&";
       }
     }
 

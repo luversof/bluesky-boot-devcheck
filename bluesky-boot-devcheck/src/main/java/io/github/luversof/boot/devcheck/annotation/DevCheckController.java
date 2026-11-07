@@ -7,6 +7,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.springframework.context.annotation.Conditional;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Inherited
 @Documented
 @RestController
+@Conditional(DevCheckEnabledCondition.class)
 public @interface DevCheckController {
 
   @AliasFor(annotation = RestController.class)

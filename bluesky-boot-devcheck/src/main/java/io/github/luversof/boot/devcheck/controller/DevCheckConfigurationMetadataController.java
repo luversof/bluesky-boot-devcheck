@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +52,11 @@ public class DevCheckConfigurationMetadataController {
 
   /** Property names that look like a secret are reported masked. */
   private static final String[] SECRET_HINTS = {
-    "password", "secret", "token", "credential", "private-key", "privatekey", "passphrase"
+    "password", "secret", "token", "credential", "key", "passphrase"
   };
+
+  /** The password part of {@code scheme://user:password@host}, which can sit in any value. */
+  private static final Pattern URL_PASSWORD = Pattern.compile("(://[^/:@\\s]*:)[^/@\\s]+@");
 
   private final ConfigurableEnvironment environment;
 
@@ -153,9 +157,9 @@ public class DevCheckConfigurationMetadataController {
     var entry = new LinkedHashMap<String, Object>();
     entry.put("name", name);
     // as written in the file: placeholders and expressions are left untouched
-    entry.put("value", secret ? "****" : Objects.toString(raw, null));
+    entry.put("value", secret ? "****" : maskUrlPassword(Objects.toString(raw, null)));
     // what the application ends up using once placeholders are resolved
-    entry.put("resolvedValue", secret ? "****" : resolveProperty(name));
+    entry.put("resolvedValue", secret ? "****" : maskUrlPassword(resolveProperty(name)));
     entry.put("source", propertySource.getName());
     entry.put("kind", sourceKind(propertySource.getName()));
     properties.add(entry);
@@ -198,6 +202,10 @@ public class DevCheckConfigurationMetadataController {
       return "system";
     }
     return "other";
+  }
+
+  private static String maskUrlPassword(String value) {
+    return value == null ? null : URL_PASSWORD.matcher(value).replaceAll("$1****@");
   }
 
   private boolean isSecret(String name) {

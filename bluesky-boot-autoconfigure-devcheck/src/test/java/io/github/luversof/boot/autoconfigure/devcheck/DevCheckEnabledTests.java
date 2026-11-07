@@ -45,6 +45,18 @@ class DevCheckEnabledTests {
   }
 
   @Test
+  void appDevCheckControllerIsRegisteredOnlyWhenEnabled() {
+    // 앱이 만든 @DevCheckController 는 자동 설정 밖이라, 꺼진 상태에서도 접두어 없이 열리면 안 된다
+    this.contextRunner
+        .withUserConfiguration(TestDevCheckController.class)
+        .run(context -> assertThat(context).doesNotHaveBean(TestDevCheckController.class));
+    this.contextRunner
+        .withUserConfiguration(TestDevCheckController.class)
+        .withPropertyValues("bluesky-boot.dev-check.enabled=true")
+        .run(context -> assertThat(context).hasSingleBean(TestDevCheckController.class));
+  }
+
+  @Test
   void enabledRegistersControllersAndCapturesLogsUntilClosed() {
     this.contextRunner
         .withPropertyValues("bluesky-boot.dev-check.enabled=true")

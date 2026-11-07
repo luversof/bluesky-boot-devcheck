@@ -57,6 +57,8 @@ class DevCheckCoreAutoServletConfigurationTests {
         .withPropertyValues(
             "bluesky-boot.core.module-name-set=a,b",
             "bluesky-boot.core.some-password=verysecret",
+            "bluesky-boot.core.api-key=sk-live-123",
+            "bluesky-boot.core.db-url=jdbc:mysql://app:dbpass@db.local:3306/main",
             "bluesky-boot.core.raw-source=resolved-value",
             "bluesky-boot.core.placeholder-sample=${bluesky-boot.core.raw-source}")
         .run(context -> {
@@ -78,6 +80,12 @@ class DevCheckCoreAutoServletConfigurationTests {
           assertThat(placeholder).containsEntry("value", "${bluesky-boot.core.raw-source}");
           assertThat(placeholder).containsEntry("resolvedValue", "resolved-value");
           assertThat(byName).containsEntry("bluesky-boot.core.some-password", "****");
+          assertThat(byName).containsEntry("bluesky-boot.core.api-key", "****");
+          // a password inside a URL value is hidden, the rest of the URL stays readable
+          assertThat(byName)
+              .containsEntry(
+                  "bluesky-boot.core.db-url", "jdbc:mysql://app:****@db.local:3306/main");
+          assertThat(properties.toString()).doesNotContain("dbpass", "sk-live-123");
           assertThat(byName.keySet()).allMatch(name -> name.startsWith("bluesky-boot.core"));
 
           // no prefix requested -> nothing, so the whole environment is never dumped

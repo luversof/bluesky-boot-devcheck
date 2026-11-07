@@ -10,7 +10,7 @@ import io.github.luversof.boot.devcheck.exception.DevCheckException;
 @Aspect
 public class DevCheckControllerAspect {
 	
-	private DevCheckProperties devCheckProperties;
+	private final DevCheckProperties devCheckProperties;
 	
 	public DevCheckControllerAspect(DevCheckProperties devCheckProperties) {
 		this.devCheckProperties = devCheckProperties;

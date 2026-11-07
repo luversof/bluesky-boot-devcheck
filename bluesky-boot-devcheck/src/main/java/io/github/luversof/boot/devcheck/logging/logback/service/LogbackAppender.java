@@ -2,7 +2,6 @@ package io.github.luversof.boot.devcheck.logging.logback.service;
 
 import java.nio.charset.StandardCharsets;
 
-import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.encoder.LayoutWrappingEncoder;
@@ -51,7 +50,7 @@ public class LogbackAppender<E> extends UnsynchronizedAppenderBase<E> {
 	/** 붙인 로거에서 떼고 멈춘다. 컨텍스트가 닫힐 때 불린다 - 안 떼면 컨텍스트를 다시 띄울 때마다 appender 가 쌓인다. */
 	public void detach() {
 		if (attachedTo != null) {
-			attachedTo.detachAppender((Appender<E>) this);
+			attachedTo.detachAppender(this);
 			attachedTo = null;
 		}
 		stop();

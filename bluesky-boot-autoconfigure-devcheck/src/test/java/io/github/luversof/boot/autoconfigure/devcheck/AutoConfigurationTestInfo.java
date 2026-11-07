@@ -14,11 +14,11 @@ public final class AutoConfigurationTestInfo {
 	private AutoConfigurationTestInfo() {
 	}
 
-	public static final String[] BASE_PROPERTY = new String[] { "net-profile=localdev", "bluesky-boot.dev-check.enabled=true" };
+	public static final String[] BASE_PROPERTY = { "net-profile=localdev", "bluesky-boot.dev-check.enabled=true" };
 
-	public static final Class<?>[] DEVCHECK_SERVLET_CONFIGURATION = new Class<?>[] { WebMvcAutoConfiguration.class, DispatcherServletAutoConfiguration.class, HttpMessageConvertersAutoConfiguration.class, PropertyPlaceholderAutoConfiguration.class };
+	public static final Class<?>[] DEVCHECK_SERVLET_CONFIGURATION = { WebMvcAutoConfiguration.class, DispatcherServletAutoConfiguration.class, HttpMessageConvertersAutoConfiguration.class, PropertyPlaceholderAutoConfiguration.class };
 
-	public static final Class<?>[] DEVCHECK_CORE_USER_CONFIGURATION = new Class<?>[] { DevCheckAutoConfiguration.class };
+	public static final Class<?>[] DEVCHECK_CORE_USER_CONFIGURATION = { DevCheckAutoConfiguration.class };
 
 	public static final Class<?>[] DEVCHECK_CORE_SERVLET_USER_CONFIGURATION = addClassAll(DEVCHECK_CORE_USER_CONFIGURATION, DevCheckMvcAutoConfiguration.class);
 

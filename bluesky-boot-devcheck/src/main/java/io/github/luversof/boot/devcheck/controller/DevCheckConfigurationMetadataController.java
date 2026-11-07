@@ -7,6 +7,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,48 +108,8 @@ public class DevCheckConfigurationMetadataController {
 
     if (prefix != null && !prefix.isEmpty()) {
       for (PropertySource<?> propertySource : environment.getPropertySources()) {
-        if (!(propertySource instanceof EnumerablePropertySource<?> enumerable)) {
-          continue;
-        }
-        String[] names;
-      try {
-        names = enumerable.getPropertyNames();
-      } catch (RuntimeException e) {
-        LOGGER.debug("property source not enumerable : {}", propertySource.getName(), e);
-        continue;
-      }
-      for (String name : names) {
-          if (!matchesPrefix(name, prefix) || !seen.add(name)) {
-            continue;
-          }
-          var secret = isSecret(name);
-
-          Object raw;
-          try {
-            raw = enumerable.getProperty(name);
-          } catch (RuntimeException e) {
-            LOGGER.debug("property not readable : {}", name, e);
-            continue;
-          }
-
-          // resolving can fail on an unresolvable placeholder - that must not fail the call
-          String resolved;
-          try {
-            resolved = environment.getProperty(name);
-          } catch (RuntimeException e) {
-            LOGGER.debug("property not resolvable : {}", name, e);
-            resolved = null;
-          }
-
-          var entry = new LinkedHashMap<String, Object>();
-          entry.put("name", name);
-          // as written in the file: placeholders and expressions are left untouched
-          entry.put("value", secret ? "****" : (raw == null ? null : String.valueOf(raw)));
-          // what the application ends up using once placeholders are resolved
-          entry.put("resolvedValue", secret ? "****" : resolved);
-          entry.put("source", propertySource.getName());
-          entry.put("kind", sourceKind(propertySource.getName()));
-          properties.add(entry);
+        if (propertySource instanceof EnumerablePropertySource<?> enumerable) {
+          collectProperties(enumerable, prefix, seen, properties);
         }
       }
     }
@@ -155,6 +117,59 @@ public class DevCheckConfigurationMetadataController {
     var result = new LinkedHashMap<String, Object>();
     result.put("properties", properties);
     return result;
+  }
+
+  private void collectProperties(
+      EnumerablePropertySource<?> propertySource,
+      List<String> prefix,
+      Set<String> seen,
+      List<Map<String, Object>> properties) {
+    String[] names;
+    try {
+      names = propertySource.getPropertyNames();
+    } catch (RuntimeException e) {
+      LOGGER.debug("property source not enumerable : {}", propertySource.getName(), e);
+      return;
+    }
+    for (String name : names) {
+      if (matchesPrefix(name, prefix) && seen.add(name)) {
+        addProperty(propertySource, name, properties);
+      }
+    }
+  }
+
+  private void addProperty(
+      EnumerablePropertySource<?> propertySource,
+      String name,
+      List<Map<String, Object>> properties) {
+    Object raw;
+    try {
+      raw = propertySource.getProperty(name);
+    } catch (RuntimeException e) {
+      LOGGER.debug("property not readable : {}", name, e);
+      return;
+    }
+
+    var secret = isSecret(name);
+    var entry = new LinkedHashMap<String, Object>();
+    entry.put("name", name);
+    // as written in the file: placeholders and expressions are left untouched
+    entry.put("value", secret ? "****" : Objects.toString(raw, null));
+    // what the application ends up using once placeholders are resolved
+    entry.put("resolvedValue", secret ? "****" : resolveProperty(name));
+    entry.put("source", propertySource.getName());
+    entry.put("kind", sourceKind(propertySource.getName()));
+    properties.add(entry);
+  }
+
+  private String resolveProperty(String name) {
+    // resolving can fail on an unresolvable placeholder - that must not fail the call
+    try {
+      return environment.getProperty(name);
+    } catch (RuntimeException e) {
+      LOGGER.debug("property not resolvable : {}", name, e);
+      return null;
+    }
   }
 
   private boolean matchesPrefix(String name, List<String> prefixes) {

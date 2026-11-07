@@ -68,8 +68,8 @@ class DevCheckCoreAutoServletConfigurationTests {
 							.filter(entry -> "bluesky-boot.core.placeholder-sample".equals(entry.get("name")))
 							.findFirst()
 							.orElseThrow();
-					assertThat(placeholder.get("value")).isEqualTo("${bluesky-boot.core.raw-source}");
-					assertThat(placeholder.get("resolvedValue")).isEqualTo("resolved-value");
+					assertThat(placeholder).containsEntry("value", "${bluesky-boot.core.raw-source}");
+					assertThat(placeholder).containsEntry("resolvedValue", "resolved-value");
 					assertThat(byName).containsEntry("bluesky-boot.core.some-password", "****");
 					assertThat(byName.keySet()).allMatch(name -> name.startsWith("bluesky-boot.core"));
 
@@ -85,14 +85,6 @@ class DevCheckCoreAutoServletConfigurationTests {
 			var patterns = context.getBean(RequestMappingHandlerMapping.class).getHandlerMethods().keySet().stream()
 					.map(Object::toString).toList();
 			assertThat(patterns).anyMatch(p -> p.contains("/_check/devcheck/metadata/configurationMetadata"));
-		});
-	}
-
-	@Test
-	void handlerMethods() {
-		this.contextRunner.run(context -> {
-			var handlerMethods = context.getBean(RequestMappingHandlerMapping.class).getHandlerMethods();
-			log.debug("handlerMethods : {}", handlerMethods);
 		});
 	}
 }

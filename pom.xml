@@ -47,6 +47,10 @@
 		<profile>
 			<id>sonarqube</id>
 			<properties>
+				<sonar.projectKey>bluesky-boot-devcheck</sonar.projectKey>
+				<sonar.projectName>bluesky boot devcheck project</sonar.projectName>
+				<sonar.ws.timeout>300</sonar.ws.timeout>
+				<sonar.qualitygate.wait>true</sonar.qualitygate.wait>
 				<sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/bluesky-boot-autoconfigure-devcheck/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 			</properties>
 		</profile>

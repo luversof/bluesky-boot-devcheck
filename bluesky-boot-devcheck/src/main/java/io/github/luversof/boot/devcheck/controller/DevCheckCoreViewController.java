@@ -11,33 +11,36 @@ import io.github.luversof.boot.devcheck.annotation.DevCheckViewController;
 
 @DevCheckViewController
 public class DevCheckCoreViewController {
-	
-	@GetMapping("/index")
-	public ResponseEntity<Resource> index() {
-		return forwardToStaticResource("static/_check/devCheckInfo.html");
-	}
 
-	@GetMapping("/util")
-	public ResponseEntity<Resource> util() {
-		return forwardToStaticResource("static/_check/devCheckUtilInfo.html");
-	}
+  @GetMapping("/index")
+  public ResponseEntity<Resource> index() {
+    return forwardToStaticResource("static/_check/devCheckInfo.html");
+  }
 
-	@GetMapping("/jsonView")
-	public ResponseEntity<Resource> jsonView() {
-		return forwardToStaticResource("static/_check/devCheckJsonView.html");
-	}
+  @GetMapping("/util")
+  public ResponseEntity<Resource> util() {
+    return forwardToStaticResource("static/_check/devCheckUtilInfo.html");
+  }
 
-	@GetMapping("/propertiesView")
-	public ResponseEntity<Resource> propertiesView() {
-		return forwardToStaticResource("static/_check/devCheckPropertiesView.html");
-	}
+  @GetMapping("/jsonView")
+  public ResponseEntity<Resource> jsonView() {
+    return forwardToStaticResource("static/_check/devCheckJsonView.html");
+  }
 
-	private ResponseEntity<Resource> forwardToStaticResource(String resourcePath) {
-		ClassPathResource resource = new ClassPathResource(resourcePath);
-		if (!resource.exists()) {
-			return ResponseEntity.notFound().build();
-		}
-		// 라이브러리를 올리면 화면도 바로 바뀌어야 한다 - 예전 365일 캐시는 옛 화면을 붙잡았다
-		return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).cacheControl(CacheControl.noCache()).body(resource);
-	}
+  @GetMapping("/propertiesView")
+  public ResponseEntity<Resource> propertiesView() {
+    return forwardToStaticResource("static/_check/devCheckPropertiesView.html");
+  }
+
+  private ResponseEntity<Resource> forwardToStaticResource(String resourcePath) {
+    ClassPathResource resource = new ClassPathResource(resourcePath);
+    if (!resource.exists()) {
+      return ResponseEntity.notFound().build();
+    }
+    // 라이브러리를 올리면 화면도 바로 바뀌어야 한다 - 예전 365일 캐시는 옛 화면을 붙잡았다
+    return ResponseEntity.ok()
+        .contentType(MediaType.TEXT_HTML)
+        .cacheControl(CacheControl.noCache())
+        .body(resource);
+  }
 }

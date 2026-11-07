@@ -13,13 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
 @RestController
 @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 @DevCheckController
-public @interface InheritedDevCheckController {
-
-}
+public @interface InheritedDevCheckController {}

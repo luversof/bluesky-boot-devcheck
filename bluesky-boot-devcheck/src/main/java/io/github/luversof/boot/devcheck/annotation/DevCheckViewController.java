@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
  * DevCheck ViewPage를 제공하기 위한 annotation
- * 
- * 내부 사용 목적
+ *
+ * <p>내부 사용 목적
  */
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
 public @interface DevCheckViewController {
 
-	@AliasFor(annotation = Controller.class)
-	String value() default "";
-
+  @AliasFor(annotation = Controller.class)
+  String value() default "";
 }

@@ -22,63 +22,78 @@ import io.github.luversof.boot.devcheck.logging.logback.service.LogbackAppenderS
 
 class DevCheckEnabledTests {
 
-	private static final String APPENDER_NAME = "blueskyBootLogbackAppender";
+  private static final String APPENDER_NAME = "blueskyBootLogbackAppender";
 
-	private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(DEVCHECK_SERVLET_CONFIGURATION))
-			.withConfiguration(AutoConfigurations.of(DevCheckAutoConfiguration.class, DevCheckMvcAutoConfiguration.class, LogbackAutoConfiguration.class));
+  private final WebApplicationContextRunner contextRunner =
+      new WebApplicationContextRunner()
+          .withConfiguration(AutoConfigurations.of(DEVCHECK_SERVLET_CONFIGURATION))
+          .withConfiguration(
+              AutoConfigurations.of(
+                  DevCheckAutoConfiguration.class,
+                  DevCheckMvcAutoConfiguration.class,
+                  LogbackAutoConfiguration.class));
 
-	@Test
-	void offUnlessEnabled() {
-		this.contextRunner.run(context -> {
-			assertThat(context).hasNotFailed();
-			assertThat(context).doesNotHaveBean(DevCheckProperties.class);
-			assertThat(context).doesNotHaveBean(DevCheckCoreController.class);
-			assertThat(context).doesNotHaveBean(DevCheckLogbackController.class);
-			assertThat(rootLogger().getAppender(APPENDER_NAME)).isNull();
-		});
-	}
+  @Test
+  void offUnlessEnabled() {
+    this.contextRunner.run(context -> {
+      assertThat(context).hasNotFailed();
+      assertThat(context).doesNotHaveBean(DevCheckProperties.class);
+      assertThat(context).doesNotHaveBean(DevCheckCoreController.class);
+      assertThat(context).doesNotHaveBean(DevCheckLogbackController.class);
+      assertThat(rootLogger().getAppender(APPENDER_NAME)).isNull();
+    });
+  }
 
-	@Test
-	void enabledRegistersControllersAndCapturesLogsUntilClosed() {
-		this.contextRunner.withPropertyValues("bluesky-boot.dev-check.enabled=true").run(context -> {
-			assertThat(context).hasSingleBean(DevCheckCoreController.class);
-			assertThat(context).hasSingleBean(DevCheckLogbackController.class);
-			assertThat(rootLogger().getAppender(APPENDER_NAME)).isNotNull();
+  @Test
+  void enabledRegistersControllersAndCapturesLogsUntilClosed() {
+    this.contextRunner
+        .withPropertyValues("bluesky-boot.dev-check.enabled=true")
+        .run(context -> {
+          assertThat(context).hasSingleBean(DevCheckCoreController.class);
+          assertThat(context).hasSingleBean(DevCheckLogbackController.class);
+          assertThat(rootLogger().getAppender(APPENDER_NAME)).isNotNull();
 
-			LoggerFactory.getLogger(DevCheckEnabledTests.class).warn("dev-check-capture-marker");
-			assertThat(context.getBean(LogbackAppenderService.class).getLogs()).anyMatch(log -> log.contains("dev-check-capture-marker"));
-		});
-		// 컨텍스트를 닫으면 떼어 내야 한다 - 안 그러면 테스트·재기동마다 쌓인다
-		assertThat(rootLogger().getAppender(APPENDER_NAME)).isNull();
-	}
+          LoggerFactory.getLogger(DevCheckEnabledTests.class).warn("dev-check-capture-marker");
+          assertThat(context.getBean(LogbackAppenderService.class).getLogs())
+              .anyMatch(log -> log.contains("dev-check-capture-marker"));
+        });
+    // 컨텍스트를 닫으면 떼어 내야 한다 - 안 그러면 테스트·재기동마다 쌓인다
+    assertThat(rootLogger().getAppender(APPENDER_NAME)).isNull();
+  }
 
-	@Test
-	void renamedBasePackagesBinds() {
-		this.contextRunner.withPropertyValues("bluesky-boot.dev-check.enabled=true", "bluesky-boot.dev-check.base-packages=a.b,c.d")
-				.run(context -> assertThat(context.getBean(DevCheckProperties.class).getBasePackages()).containsExactly("a.b", "c.d"));
-	}
+  @Test
+  void renamedBasePackagesBinds() {
+    this.contextRunner
+        .withPropertyValues(
+            "bluesky-boot.dev-check.enabled=true", "bluesky-boot.dev-check.base-packages=a.b,c.d")
+        .run(context ->
+            assertThat(context.getBean(DevCheckProperties.class).getBasePackages())
+                .containsExactly("a.b", "c.d"));
+  }
 
-	@Test
-	void repeatedContextsDoNotStackAppenders() {
-		var counts = new ArrayList<Integer>();
-		for (int i = 0; i < 3; i++) {
-			this.contextRunner.withPropertyValues("bluesky-boot.dev-check.enabled=true").run(context -> counts.add(countAppenders()));
-		}
-		assertThat(counts).isEqualTo(List.of(1, 1, 1));
-	}
+  @Test
+  void repeatedContextsDoNotStackAppenders() {
+    var counts = new ArrayList<Integer>();
+    for (int i = 0; i < 3; i++) {
+      this.contextRunner
+          .withPropertyValues("bluesky-boot.dev-check.enabled=true")
+          .run(context -> counts.add(countAppenders()));
+    }
+    assertThat(counts).isEqualTo(List.of(1, 1, 1));
+  }
 
-	private static Logger rootLogger() {
-		return ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-	}
+  private static Logger rootLogger() {
+    return ((LoggerContext) LoggerFactory.getILoggerFactory())
+        .getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+  }
 
-	private static int countAppenders() {
-		var count = 0;
-		for (var it = rootLogger().iteratorForAppenders(); it.hasNext();) {
-			if (APPENDER_NAME.equals(it.next().getName())) {
-				count++;
-			}
-		}
-		return count;
-	}
+  private static int countAppenders() {
+    var count = 0;
+    for (var it = rootLogger().iteratorForAppenders(); it.hasNext(); ) {
+      if (APPENDER_NAME.equals(it.next().getName())) {
+        count++;
+      }
+    }
+    return count;
+  }
 }

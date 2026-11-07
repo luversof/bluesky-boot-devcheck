@@ -32,125 +32,158 @@ import io.github.luversof.boot.devcheck.domain.DevCheckInfo;
 import io.github.luversof.boot.devcheck.util.DevCheckUtil;
 
 public class DevCheckInfoMvcService implements ApplicationContextAware {
-	
-	/** path prefix &rarr; 목록. 요청 스레드 여럿이 동시에 채울 수 있다. */
-	private final Map<String, List<DevCheckInfo>> devCheckInfoListMap = new ConcurrentHashMap<>();
-	
-	private ApplicationContext applicationContext;
-	
-	private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
-	
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.applicationContext = applicationContext;
-	}
-	
-	public List<DevCheckInfo> getDevCheckInfoList() {
-		var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
-		var currentRequestURI = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest().getRequestURI();
-		var currentPathPrefix = DevCheckUtil.getCurrentPathPrefix(devCheckProperties.getPathPrefixes(), currentRequestURI);
-		return devCheckInfoListMap.computeIfAbsent(currentPathPrefix == null ? "" : currentPathPrefix, prefix -> createDevCheckInfoList());
-	}
 
-	private List<DevCheckInfo> createDevCheckInfoList() {
-		var devCheckInfoList = new ArrayList<DevCheckInfo>();
+  /** path prefix &rarr; 목록. 요청 스레드 여럿이 동시에 채울 수 있다. */
+  private final Map<String, List<DevCheckInfo>> devCheckInfoListMap = new ConcurrentHashMap<>();
 
-		var handlerMethodMap = getTargetHandlerMethodMap();
-		handlerMethodMap.entrySet().stream()
-			.filter(map -> (!map.getValue().hasMethodAnnotation(DevCheckDescription.class) || (map.getValue().hasMethodAnnotation(DevCheckDescription.class) && map.getValue().getMethodAnnotation(DevCheckDescription.class).displayable())))
-			.forEach(map -> devCheckInfoList.add(createDevCheckInfo(map)));
-		return devCheckInfoList.stream().sorted(Comparator.comparing(DevCheckInfo::beanName).thenComparing(devCheckInfo -> devCheckInfo.urlList().get(0))).toList();
-	}
+  private ApplicationContext applicationContext;
 
-	/**
-	 * get handlerMethod map from RequestMappingHAndlerMapping bean
-	 * @return
-	 */
-	private Map<RequestMappingInfo, HandlerMethod> getHandlerMethodMap() {
-		var requestMappingHandlerMappingMap = applicationContext.getBeansOfType(RequestMappingHandlerMapping.class);
-		
-		return requestMappingHandlerMappingMap.values().stream()
-			.map(RequestMappingHandlerMapping::getHandlerMethods)
-			.map(Map::entrySet)
-			.flatMap(Collection::stream)
-			// 같은 매핑이 handler mapping 여럿에 있으면 첫 것을 쓴다(예전에는 중복 키로 예외가 났다)
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first));
-	}
-	
-	/**
-	 * get target handlerMethod map 
-	 * @return
-	 */
-	private Map<RequestMappingInfo, HandlerMethod> getTargetHandlerMethodMap() {
-		var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
-		return getHandlerMethodMap().entrySet().stream()
-			.filter(handlerMapping -> 
-				handlerMapping.getValue().getBeanType().isAnnotationPresent(DevCheckController.class)
-				&& (
-					handlerMapping.getKey().getPathPatternsCondition() != null
-					&& handlerMapping.getKey().getPathPatternsCondition().getPatterns().stream().anyMatch(pattern -> {
-						for(var pathPrefix : devCheckProperties.getPathPrefixes()) {
-							if (pattern.getPatternString().startsWith(pathPrefix)) {
-								return true;
-							}
-						}
-						return false;
-					})
-				)
-				&& handlerMapping.getKey().getProducesCondition().getExpressions().stream().anyMatch(mediaTypeExpression -> mediaTypeExpression.getMediaType().equals(MediaType.APPLICATION_JSON)))
-			.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-	}
-	
-	private DevCheckInfo createDevCheckInfo(Entry<RequestMappingInfo, HandlerMethod> handlerMethodMap) {
-		var requestMappingInfo = handlerMethodMap.getKey();
-		var handlerMethod = handlerMethodMap.getValue();
-		
-		// 구하려고 하는 값 : beanName, method, urlList, description
-		String beanName = handlerMethod.getBean().toString();
-		String method = handlerMethod.getMethod().getName();
-		var urlList = new ArrayList<String>();
-		String description = null;
-		
-		var pathPatternsCondition = requestMappingInfo.getPathPatternsCondition();
-		if (pathPatternsCondition == null) {
-			Assert.notNull(pathPatternsCondition, "patternsCondition or pathPatternsCondition must not null");
-		}
-		
-		for (PathPattern pattern : pathPatternsCondition.getPatterns()) {
-			urlList.add(getUrlWithParameter(pattern.getPatternString(), handlerMethodMap.getValue().getMethod()));
-		}
-	
-		var methodAnnotation = handlerMethod.getMethodAnnotation(DevCheckDescription.class);
-		if (methodAnnotation != null) {
-			description = methodAnnotation.value();
-		}
-		
-		// urlList의 경우 현재 요청의 path와 일치하는 것을 우선 정렬
-		var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
-		
-		// 현재 요청 주소에 대한 pathPrefix 를 구해야 함.
-		var currentRequestURI = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest().getRequestURI();
-		DevCheckUtil.sortUrlList(urlList, devCheckProperties.getPathPrefixes(), currentRequestURI);
-		
-		
-		return new DevCheckInfo(beanName, method, urlList, description);
-	}
-	
-	public String getUrlWithParameter(String pattern, Method method) {
-		var stringBuilder = new StringBuilder();
-		stringBuilder.append(((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest().getContextPath());
-		stringBuilder.append(pattern);
-		
-		var parameterNames = parameterNameDiscoverer.getParameterNames(method);
-		if (parameterNames != null && parameterNames.length > 0) {
-			for (int i = 0; i < parameterNames.length; i++) {
-				if (method.getParameters()[i].isAnnotationPresent(PathVariable.class)) {
-					continue;
-				}
-				stringBuilder.append(i == 0 ? "?" : "&").append(parameterNames[i]).append("={").append(parameterNames[i]).append("}");
-			}
-		}
-		
-		return stringBuilder.toString().replace("//", "/");
-	}
+  private final ParameterNameDiscoverer parameterNameDiscoverer =
+      new DefaultParameterNameDiscoverer();
+
+  @Override
+  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    this.applicationContext = applicationContext;
+  }
+
+  public List<DevCheckInfo> getDevCheckInfoList() {
+    var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
+    var currentRequestURI =
+        ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+            .getRequest()
+            .getRequestURI();
+    var currentPathPrefix =
+        DevCheckUtil.getCurrentPathPrefix(devCheckProperties.getPathPrefixes(), currentRequestURI);
+    return devCheckInfoListMap.computeIfAbsent(
+        currentPathPrefix == null ? "" : currentPathPrefix, prefix -> createDevCheckInfoList());
+  }
+
+  private List<DevCheckInfo> createDevCheckInfoList() {
+    var devCheckInfoList = new ArrayList<DevCheckInfo>();
+
+    var handlerMethodMap = getTargetHandlerMethodMap();
+    handlerMethodMap.entrySet().stream()
+        .filter(map ->
+            (!map.getValue().hasMethodAnnotation(DevCheckDescription.class)
+                || (map.getValue().hasMethodAnnotation(DevCheckDescription.class)
+                    && map.getValue()
+                        .getMethodAnnotation(DevCheckDescription.class)
+                        .displayable())))
+        .forEach(map -> devCheckInfoList.add(createDevCheckInfo(map)));
+    return devCheckInfoList.stream()
+        .sorted(
+            Comparator.comparing(DevCheckInfo::beanName)
+                .thenComparing(devCheckInfo -> devCheckInfo.urlList().get(0)))
+        .toList();
+  }
+
+  /**
+   * get handlerMethod map from RequestMappingHAndlerMapping bean
+   *
+   * @return
+   */
+  private Map<RequestMappingInfo, HandlerMethod> getHandlerMethodMap() {
+    var requestMappingHandlerMappingMap =
+        applicationContext.getBeansOfType(RequestMappingHandlerMapping.class);
+
+    return requestMappingHandlerMappingMap.values().stream()
+        .map(RequestMappingHandlerMapping::getHandlerMethods)
+        .map(Map::entrySet)
+        .flatMap(Collection::stream)
+        // 같은 매핑이 handler mapping 여럿에 있으면 첫 것을 쓴다(예전에는 중복 키로 예외가 났다)
+        .collect(
+            Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first));
+  }
+
+  /**
+   * get target handlerMethod map
+   *
+   * @return
+   */
+  private Map<RequestMappingInfo, HandlerMethod> getTargetHandlerMethodMap() {
+    var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
+    return getHandlerMethodMap().entrySet().stream()
+        .filter(handlerMapping ->
+            handlerMapping.getValue().getBeanType().isAnnotationPresent(DevCheckController.class)
+                && (handlerMapping.getKey().getPathPatternsCondition() != null
+                    && handlerMapping.getKey().getPathPatternsCondition().getPatterns().stream()
+                        .anyMatch(pattern -> {
+                          for (var pathPrefix : devCheckProperties.getPathPrefixes()) {
+                            if (pattern.getPatternString().startsWith(pathPrefix)) {
+                              return true;
+                            }
+                          }
+                          return false;
+                        }))
+                && handlerMapping.getKey().getProducesCondition().getExpressions().stream()
+                    .anyMatch(mediaTypeExpression ->
+                        mediaTypeExpression.getMediaType().equals(MediaType.APPLICATION_JSON)))
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+  }
+
+  private DevCheckInfo createDevCheckInfo(
+      Entry<RequestMappingInfo, HandlerMethod> handlerMethodMap) {
+    var requestMappingInfo = handlerMethodMap.getKey();
+    var handlerMethod = handlerMethodMap.getValue();
+
+    // 구하려고 하는 값 : beanName, method, urlList, description
+    String beanName = handlerMethod.getBean().toString();
+    String method = handlerMethod.getMethod().getName();
+    var urlList = new ArrayList<String>();
+    String description = null;
+
+    var pathPatternsCondition = requestMappingInfo.getPathPatternsCondition();
+    if (pathPatternsCondition == null) {
+      Assert.notNull(
+          pathPatternsCondition, "patternsCondition or pathPatternsCondition must not null");
+    }
+
+    for (PathPattern pattern : pathPatternsCondition.getPatterns()) {
+      urlList.add(
+          getUrlWithParameter(pattern.getPatternString(), handlerMethodMap.getValue().getMethod()));
+    }
+
+    var methodAnnotation = handlerMethod.getMethodAnnotation(DevCheckDescription.class);
+    if (methodAnnotation != null) {
+      description = methodAnnotation.value();
+    }
+
+    // urlList의 경우 현재 요청의 path와 일치하는 것을 우선 정렬
+    var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
+
+    // 현재 요청 주소에 대한 pathPrefix 를 구해야 함.
+    var currentRequestURI =
+        ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+            .getRequest()
+            .getRequestURI();
+    DevCheckUtil.sortUrlList(urlList, devCheckProperties.getPathPrefixes(), currentRequestURI);
+
+    return new DevCheckInfo(beanName, method, urlList, description);
+  }
+
+  public String getUrlWithParameter(String pattern, Method method) {
+    var stringBuilder = new StringBuilder();
+    stringBuilder.append(
+        ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+            .getRequest()
+            .getContextPath());
+    stringBuilder.append(pattern);
+
+    var parameterNames = parameterNameDiscoverer.getParameterNames(method);
+    if (parameterNames != null && parameterNames.length > 0) {
+      for (int i = 0; i < parameterNames.length; i++) {
+        if (method.getParameters()[i].isAnnotationPresent(PathVariable.class)) {
+          continue;
+        }
+        stringBuilder
+            .append(i == 0 ? "?" : "&")
+            .append(parameterNames[i])
+            .append("={")
+            .append(parameterNames[i])
+            .append("}");
+      }
+    }
+
+    return stringBuilder.toString().replace("//", "/");
+  }
 }

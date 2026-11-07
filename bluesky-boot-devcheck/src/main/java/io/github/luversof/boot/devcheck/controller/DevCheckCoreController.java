@@ -16,35 +16,34 @@ import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 @DevCheckController
 @RequestMapping(value = "/devcheck/core", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DevCheckCoreController {
-	
-	private final ApplicationContext applicationContext;
 
-	public DevCheckCoreController(ApplicationContext applicationContext) {
-		this.applicationContext = applicationContext;
-	}
+  private final ApplicationContext applicationContext;
 
-	@DevCheckDescription("spring activeProfiles")
-	@GetMapping("/activeProfiles")
-	public String[] activeProfiles() {
-		return applicationContext.getEnvironment().getActiveProfiles();
-	}
+  public DevCheckCoreController(ApplicationContext applicationContext) {
+    this.applicationContext = applicationContext;
+  }
 
-	@DevCheckDescription("locale")
-	@GetMapping("/locale")
-	public Locale locale() {
-		return LocaleContextHolder.getLocale();
-	}
+  @DevCheckDescription("spring activeProfiles")
+  @GetMapping("/activeProfiles")
+  public String[] activeProfiles() {
+    return applicationContext.getEnvironment().getActiveProfiles();
+  }
 
-	@DevCheckDescription("LocaleDateTime.now()")
-	@GetMapping("/localDateTimeNow")
-	public LocalDateTime localeDateTimeNow() {
-		return LocalDateTime.now();
-	}
+  @DevCheckDescription("locale")
+  @GetMapping("/locale")
+  public Locale locale() {
+    return LocaleContextHolder.getLocale();
+  }
 
-	@DevCheckDescription("ZonedDateTime.now()")
-	@GetMapping("/zonedDateTimeNow")
-	public ZonedDateTime zonedDateTimeNow() {
-		return ZonedDateTime.now();
-	}
+  @DevCheckDescription("LocaleDateTime.now()")
+  @GetMapping("/localDateTimeNow")
+  public LocalDateTime localeDateTimeNow() {
+    return LocalDateTime.now();
+  }
 
+  @DevCheckDescription("ZonedDateTime.now()")
+  @GetMapping("/zonedDateTimeNow")
+  public ZonedDateTime zonedDateTimeNow() {
+    return ZonedDateTime.now();
+  }
 }

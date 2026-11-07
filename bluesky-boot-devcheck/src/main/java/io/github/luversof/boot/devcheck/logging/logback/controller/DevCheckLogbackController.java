@@ -15,17 +15,17 @@ import io.github.luversof.boot.devcheck.logging.logback.service.LogbackAppenderS
 @RequestMapping(value = "/devcheck/logging/logback", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DevCheckLogbackController {
 
-	private final LogbackAppenderService logbackAppenderService;
+  private final LogbackAppenderService logbackAppenderService;
 
-	public DevCheckLogbackController(LogbackAppenderService logbackAppenderService) {
-		this.logbackAppenderService = logbackAppenderService;
-	}
+  public DevCheckLogbackController(LogbackAppenderService logbackAppenderService) {
+    this.logbackAppenderService = logbackAppenderService;
+  }
 
-	@DevCheckDescription("Check last 500 line log")
-	@GetMapping("/logView")
-	public List<String> logView() {
-		return logbackAppenderService.getLogs().stream()
-			.map(log -> log.replace(CoreConstants.LINE_SEPARATOR, "").replace("\t", ""))
-			.toList();
-	}
+  @DevCheckDescription("Check last 500 line log")
+  @GetMapping("/logView")
+  public List<String> logView() {
+    return logbackAppenderService.getLogs().stream()
+        .map(log -> log.replace(CoreConstants.LINE_SEPARATOR, "").replace("\t", ""))
+        .toList();
+  }
 }

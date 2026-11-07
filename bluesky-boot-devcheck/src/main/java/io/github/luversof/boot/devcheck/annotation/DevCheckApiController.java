@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * DevCheck Api를 제공하기 위한 annotation
- * 
- * 내부 사용 목적
+ *
+ * <p>내부 사용 목적
  */
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 public @interface DevCheckApiController {
 
-	@AliasFor(annotation = RestController.class)
-	String value() default "";
-
+  @AliasFor(annotation = RestController.class)
+  String value() default "";
 }

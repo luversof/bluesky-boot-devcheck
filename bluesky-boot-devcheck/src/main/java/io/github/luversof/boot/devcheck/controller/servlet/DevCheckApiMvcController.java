@@ -13,25 +13,26 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @DevCheckApiController
 public class DevCheckApiMvcController {
-	
-	private final DevCheckInfoMvcService devCheckInfoMvcService;
-	
-	private final DevCheckUtilInfoService devCheckUtilInfoService;
-	
-	public DevCheckApiMvcController(DevCheckInfoMvcService devCheckInfoMvcService, DevCheckUtilInfoService devCheckUtilInfoService) {
-		super();
-		this.devCheckInfoMvcService = devCheckInfoMvcService;
-		this.devCheckUtilInfoService = devCheckUtilInfoService;
-	}
 
-	@GetMapping("/devCheckInfoList")
-	public List<DevCheckInfo> devCheckInfoList(HttpServletRequest request) {
-		return devCheckInfoMvcService.getDevCheckInfoList();
-	}
-	
-	@GetMapping("/devCheckUtilInfoList")
-	public List<DevCheckUtilInfo> devCheckUtilInfoList() {
-		return devCheckUtilInfoService.getDevCheckUtilInfo();
-	}
+  private final DevCheckInfoMvcService devCheckInfoMvcService;
 
+  private final DevCheckUtilInfoService devCheckUtilInfoService;
+
+  public DevCheckApiMvcController(
+      DevCheckInfoMvcService devCheckInfoMvcService,
+      DevCheckUtilInfoService devCheckUtilInfoService) {
+    super();
+    this.devCheckInfoMvcService = devCheckInfoMvcService;
+    this.devCheckUtilInfoService = devCheckUtilInfoService;
+  }
+
+  @GetMapping("/devCheckInfoList")
+  public List<DevCheckInfo> devCheckInfoList(HttpServletRequest request) {
+    return devCheckInfoMvcService.getDevCheckInfoList();
+  }
+
+  @GetMapping("/devCheckUtilInfoList")
+  public List<DevCheckUtilInfo> devCheckUtilInfoList() {
+    return devCheckUtilInfoService.getDevCheckUtilInfo();
+  }
 }

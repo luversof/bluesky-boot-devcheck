@@ -10,63 +10,91 @@ import org.springframework.boot.webmvc.autoconfigure.WebMvcAutoConfiguration;
 import io.github.luversof.boot.autoconfigure.devcheck.servlet.DevCheckMvcAutoConfiguration;
 
 public final class AutoConfigurationTestInfo {
-	
-	private AutoConfigurationTestInfo() {
-	}
 
-	public static final String[] BASE_PROPERTY = { "net-profile=localdev", "bluesky-boot.dev-check.enabled=true" };
+  private AutoConfigurationTestInfo() {}
 
-	public static final Class<?>[] DEVCHECK_SERVLET_CONFIGURATION = { WebMvcAutoConfiguration.class, DispatcherServletAutoConfiguration.class, HttpMessageConvertersAutoConfiguration.class, PropertyPlaceholderAutoConfiguration.class };
+  public static final String[] BASE_PROPERTY = {
+    "net-profile=localdev", "bluesky-boot.dev-check.enabled=true"
+  };
 
-	public static final Class<?>[] DEVCHECK_CORE_USER_CONFIGURATION = { DevCheckAutoConfiguration.class };
+  public static final Class<?>[] DEVCHECK_SERVLET_CONFIGURATION = {
+    WebMvcAutoConfiguration.class,
+    DispatcherServletAutoConfiguration.class,
+    HttpMessageConvertersAutoConfiguration.class,
+    PropertyPlaceholderAutoConfiguration.class
+  };
 
-	public static final Class<?>[] DEVCHECK_CORE_SERVLET_USER_CONFIGURATION = addClassAll(DEVCHECK_CORE_USER_CONFIGURATION, DevCheckMvcAutoConfiguration.class);
+  public static final Class<?>[] DEVCHECK_CORE_USER_CONFIGURATION = {
+    DevCheckAutoConfiguration.class
+  };
 
-	@SuppressWarnings("unused")
-	private static String[] addAll(String[] target, String... strings) {
-		var set = new HashSet<>();
+  public static final Class<?>[] DEVCHECK_CORE_SERVLET_USER_CONFIGURATION =
+      addClassAll(DEVCHECK_CORE_USER_CONFIGURATION, DevCheckMvcAutoConfiguration.class);
 
-		for (var str : target) {
-			set.add(str);
-		}
+  @SuppressWarnings("unused")
+  private static String[] addAll(String[] target, String... strings) {
+    var set = new HashSet<>();
 
-		for (var str : strings) {
-			set.add(str);
-		}
+    for (var str : target) {
+      set.add(str);
+    }
 
-		return set.toArray(new String[set.size()]);
-	}
+    for (var str : strings) {
+      set.add(str);
+    }
 
-	public static Class<?>[] addClassAll(Class<?>[] target, Class<?>... classes) {
-		var set = new HashSet<>();
+    return set.toArray(new String[set.size()]);
+  }
 
-		for (var clazz : target) {
-			set.add(clazz);
-		}
+  public static Class<?>[] addClassAll(Class<?>[] target, Class<?>... classes) {
+    var set = new HashSet<>();
 
-		for (var clazz : classes) {
-			set.add(clazz);
-		}
-		return set.toArray(new Class<?>[set.size()]);
-	}
+    for (var clazz : target) {
+      set.add(clazz);
+    }
 
-	public static Class<?>[] addClassAll(Class<?>[] target, Class<?>[] target2, Class<?>... classes) {
-		return addClassAll(target, addClassAll(target2, classes));
-	}
+    for (var clazz : classes) {
+      set.add(clazz);
+    }
+    return set.toArray(new Class<?>[set.size()]);
+  }
 
-	public static Class<?>[] addClassAll(Class<?>[] target, Class<?>[] target2, Class<?>[] target3, Class<?>... classes) {
-		return addClassAll(target, addClassAll(target2, target3, classes));
-	}
+  public static Class<?>[] addClassAll(Class<?>[] target, Class<?>[] target2, Class<?>... classes) {
+    return addClassAll(target, addClassAll(target2, classes));
+  }
 
-	public static Class<?>[] addClassAll(Class<?>[] target, Class<?>[] target2, Class<?>[] target3, Class<?>[] target4, Class<?>... classes) {
-		return addClassAll(target, addClassAll(target2, target3, target4, classes));
-	}
+  public static Class<?>[] addClassAll(
+      Class<?>[] target, Class<?>[] target2, Class<?>[] target3, Class<?>... classes) {
+    return addClassAll(target, addClassAll(target2, target3, classes));
+  }
 
-	public static Class<?>[] addClassAll(Class<?>[] target, Class<?>[] target2, Class<?>[] target3, Class<?>[] target4, Class<?>[] target5, Class<?>... classes) {
-		return addClassAll(target, addClassAll(target2, target3, target4, target5, classes));
-	}
+  public static Class<?>[] addClassAll(
+      Class<?>[] target,
+      Class<?>[] target2,
+      Class<?>[] target3,
+      Class<?>[] target4,
+      Class<?>... classes) {
+    return addClassAll(target, addClassAll(target2, target3, target4, classes));
+  }
 
-	public static Class<?>[] addClassAll(Class<?>[] target, Class<?>[] target2, Class<?>[] target3, Class<?>[] target4, Class<?>[] target5, Class<?>[] target6, Class<?>... classes) {
-		return addClassAll(target, addClassAll(target2, target3, target4, target5, target6, classes));
-	}
+  public static Class<?>[] addClassAll(
+      Class<?>[] target,
+      Class<?>[] target2,
+      Class<?>[] target3,
+      Class<?>[] target4,
+      Class<?>[] target5,
+      Class<?>... classes) {
+    return addClassAll(target, addClassAll(target2, target3, target4, target5, classes));
+  }
+
+  public static Class<?>[] addClassAll(
+      Class<?>[] target,
+      Class<?>[] target2,
+      Class<?>[] target3,
+      Class<?>[] target4,
+      Class<?>[] target5,
+      Class<?>[] target6,
+      Class<?>... classes) {
+    return addClassAll(target, addClassAll(target2, target3, target4, target5, target6, classes));
+  }
 }

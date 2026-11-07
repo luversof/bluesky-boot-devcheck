@@ -11,15 +11,15 @@ import io.github.luversof.boot.devcheck.DevCheckProperties;
 
 class DevCheckCoreAutoConfigurationTests {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withPropertyValues(BASE_PROPERTY)
-			.withUserConfiguration(DEVCHECK_CORE_USER_CONFIGURATION)
-			;
-	
-	@Test
-	void hasDevCheckProperties() {
-		this.contextRunner.run(context -> {
-			assertThat(context).hasSingleBean(DevCheckProperties.class);
-		});
-	}
+  private final ApplicationContextRunner contextRunner =
+      new ApplicationContextRunner()
+          .withPropertyValues(BASE_PROPERTY)
+          .withUserConfiguration(DEVCHECK_CORE_USER_CONFIGURATION);
+
+  @Test
+  void hasDevCheckProperties() {
+    this.contextRunner.run(context -> {
+      assertThat(context).hasSingleBean(DevCheckProperties.class);
+    });
+  }
 }

@@ -16,21 +16,19 @@ import io.github.luversof.boot.devcheck.service.DevCheckUtilInfoService;
 @EnableConfigurationProperties(DevCheckProperties.class)
 @ConditionalOnProperty(prefix = "bluesky-boot.dev-check", name = "enabled", havingValue = "true")
 public class DevCheckAutoConfiguration {
-	
-	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnClass(Advice.class)
-	static class AspectJAutoProxyingConfiguration {
-		
-		@Bean
-		DevCheckControllerAspect devCheckControllerAspect(DevCheckProperties devCheckProperties) {
-			return new DevCheckControllerAspect(devCheckProperties);
-		}
-	
-	}
-	
-	@Bean
-	DevCheckUtilInfoService devCheckUtilInfoService(DevCheckProperties devCheckProperties) {
-		return new DevCheckUtilInfoService(devCheckProperties);
-	}
 
+  @Configuration(proxyBeanMethods = false)
+  @ConditionalOnClass(Advice.class)
+  static class AspectJAutoProxyingConfiguration {
+
+    @Bean
+    DevCheckControllerAspect devCheckControllerAspect(DevCheckProperties devCheckProperties) {
+      return new DevCheckControllerAspect(devCheckProperties);
+    }
+  }
+
+  @Bean
+  DevCheckUtilInfoService devCheckUtilInfoService(DevCheckProperties devCheckProperties) {
+    return new DevCheckUtilInfoService(devCheckProperties);
+  }
 }

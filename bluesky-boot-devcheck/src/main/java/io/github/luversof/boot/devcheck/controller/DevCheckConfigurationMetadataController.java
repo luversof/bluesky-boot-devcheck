@@ -28,12 +28,12 @@ import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 /**
  * Serves the Spring configuration metadata found on the classpath.
  *
- * <p>The metadata is generated at build time by the configuration processor and
- * describes every supported property (name, type, default value, description).
- * The properties viewer uses it for key completion and validation.
+ * <p>The metadata is generated at build time by the configuration processor and describes every
+ * supported property (name, type, default value, description). The properties viewer uses it for
+ * key completion and validation.
  *
- * <p>Documents are returned verbatim - this module has no JSON parser on its
- * compile classpath, so merging is left to the caller.
+ * <p>Documents are returned verbatim - this module has no JSON parser on its compile classpath, so
+ * merging is left to the caller.
  *
  * @author bluesky
  */
@@ -92,10 +92,9 @@ public class DevCheckConfigurationMetadataController {
   }
 
   /**
-   * Properties actually configured for this application, limited to the requested
-   * prefixes so the response stays about the framework instead of the whole
-   * environment. Values are the resolved ones and the source is the winning
-   * property source.
+   * Properties actually configured for this application, limited to the requested prefixes so the
+   * response stays about the framework instead of the whole environment. Values are the resolved
+   * ones and the source is the winning property source.
    *
    * @param prefix property name prefixes to include; nothing is returned without one
    */
@@ -182,8 +181,8 @@ public class DevCheckConfigurationMetadataController {
   }
 
   /**
-   * Where a value was written by hand: "config" for application.properties / yaml
-   * (including profile specific files), "system" for JVM and OS supplied values.
+   * Where a value was written by hand: "config" for application.properties / yaml (including
+   * profile specific files), "system" for JVM and OS supplied values.
    */
   private String sourceKind(String sourceName) {
     if (sourceName == null) {
@@ -192,8 +191,10 @@ public class DevCheckConfigurationMetadataController {
     if (sourceName.startsWith("Config resource") || sourceName.contains("applicationConfig")) {
       return "config";
     }
-    if (sourceName.startsWith("system") || sourceName.contains("systemEnvironment")
-        || sourceName.contains("systemProperties") || sourceName.contains("commandLineArgs")) {
+    if (sourceName.startsWith("system")
+        || sourceName.contains("systemEnvironment")
+        || sourceName.contains("systemProperties")
+        || sourceName.contains("commandLineArgs")) {
       return "system";
     }
     return "other";

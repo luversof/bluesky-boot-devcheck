@@ -10,8 +10,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -31,81 +31,79 @@ import io.github.luversof.boot.devcheck.service.servlet.DevCheckInfoMvcService;
 import jakarta.servlet.Servlet;
 
 @AutoConfiguration
-@ConditionalOnClass({ Servlet.class, DispatcherServlet.class })
+@ConditionalOnClass({Servlet.class, DispatcherServlet.class})
 @ConditionalOnWebApplication(type = Type.SERVLET)
 @ConditionalOnProperty(prefix = "bluesky-boot.dev-check", name = "enabled", havingValue = "true")
 @EnableConfigurationProperties(DevCheckProperties.class)
 public class DevCheckMvcAutoConfiguration implements WebMvcConfigurer {
 
-	private final String[] pathPrefixes;
+  private final String[] pathPrefixes;
 
-	public DevCheckMvcAutoConfiguration(DevCheckProperties devCheckProperties) {
-		this.pathPrefixes = devCheckProperties.getPathPrefixes();
-	}
+  public DevCheckMvcAutoConfiguration(DevCheckProperties devCheckProperties) {
+    this.pathPrefixes = devCheckProperties.getPathPrefixes();
+  }
 
-	@Bean
-	DevCheckInfoMvcService blueskyBootDevCheckInfoMvcService() {
-		return new DevCheckInfoMvcService();
-	}
+  @Bean
+  DevCheckInfoMvcService blueskyBootDevCheckInfoMvcService() {
+    return new DevCheckInfoMvcService();
+  }
 
-	@Bean
-	DevCheckApiMvcController blueskyBootDevCheckApiMvcController(DevCheckInfoMvcService devCheckInfoMvcService,DevCheckUtilInfoService devCheckUtilInfoService) {
-		return new DevCheckApiMvcController(devCheckInfoMvcService, devCheckUtilInfoService);
-	}
+  @Bean
+  DevCheckApiMvcController blueskyBootDevCheckApiMvcController(
+      DevCheckInfoMvcService devCheckInfoMvcService,
+      DevCheckUtilInfoService devCheckUtilInfoService) {
+    return new DevCheckApiMvcController(devCheckInfoMvcService, devCheckUtilInfoService);
+  }
 
-	@Bean
-	DevCheckCoreViewController blueskyBootDevCheckCoreViewController() {
-		return new DevCheckCoreViewController();
-	}
+  @Bean
+  DevCheckCoreViewController blueskyBootDevCheckCoreViewController() {
+    return new DevCheckCoreViewController();
+  }
 
-	@Bean
-	DevCheckCoreController blueskyBootDevCheckCoreController(ApplicationContext applicationContext) {
-		return new DevCheckCoreController(applicationContext);
-	}
+  @Bean
+  DevCheckCoreController blueskyBootDevCheckCoreController(ApplicationContext applicationContext) {
+    return new DevCheckCoreController(applicationContext);
+  }
 
-	@Bean
-	DevCheckConfigurationMetadataController blueskyBootDevCheckConfigurationMetadataController(ConfigurableEnvironment environment) {
-		return new DevCheckConfigurationMetadataController(environment);
-	}
+  @Bean
+  DevCheckConfigurationMetadataController blueskyBootDevCheckConfigurationMetadataController(
+      ConfigurableEnvironment environment) {
+    return new DevCheckConfigurationMetadataController(environment);
+  }
 
-	@Bean
-	WebMvcRegistrations blueskyBootDevCheckwebMvcRegistrations() {
-		return new WebMvcRegistrations() {
-			@Override
-			public RequestMappingHandlerMapping getRequestMappingHandlerMapping() {
-				return new RequestMappingHandlerMapping() {
+  @Bean
+  WebMvcRegistrations blueskyBootDevCheckwebMvcRegistrations() {
+    return new WebMvcRegistrations() {
+      @Override
+      public RequestMappingHandlerMapping getRequestMappingHandlerMapping() {
+        return new RequestMappingHandlerMapping() {
 
-					@Override
-					protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
-						RequestMappingInfo mappingInfo = super.getMappingForMethod(method, handlerType);
-						if (mappingInfo != null 
-							&& (
-								handlerType.isAnnotationPresent(DevCheckController.class)
-								|| handlerType.isAnnotationPresent(DevCheckApiController.class)
-								|| handlerType.isAnnotationPresent(DevCheckViewController.class)
-							)
-						) {
-							// prefix 도 이 handler mapping 의 매칭 방식(PathPatternParser / AntPathMatcher)으로 만든다.
-							// 기본 옵션으로 만들면 PathPattern 조건이 되어, ant-path-matcher 를 쓰는 앱에서는 문자열 패턴
-							// 조건과 합쳐지지 않고 "Neither PathPatterns nor String patterns condition" 으로 기동이 실패한다.
-							return RequestMappingInfo.paths(pathPrefixes)
-								.options(getBuilderConfiguration())
-								.build()
-								.combine(mappingInfo);
-						}
-						return mappingInfo;
-					}
+          @Override
+          protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
+            RequestMappingInfo mappingInfo = super.getMappingForMethod(method, handlerType);
+            if (mappingInfo != null
+                && (handlerType.isAnnotationPresent(DevCheckController.class)
+                    || handlerType.isAnnotationPresent(DevCheckApiController.class)
+                    || handlerType.isAnnotationPresent(DevCheckViewController.class))) {
+              // prefix 도 이 handler mapping 의 매칭 방식(PathPatternParser / AntPathMatcher)으로 만든다.
+              // 기본 옵션으로 만들면 PathPattern 조건이 되어, ant-path-matcher 를 쓰는 앱에서는 문자열 패턴
+              // 조건과 합쳐지지 않고 "Neither PathPatterns nor String patterns condition" 으로 기동이 실패한다.
+              return RequestMappingInfo.paths(pathPrefixes)
+                  .options(getBuilderConfiguration())
+                  .build()
+                  .combine(mappingInfo);
+            }
+            return mappingInfo;
+          }
+        };
+      }
+    };
+  }
 
-				};
-			}
-		};
-	}
-
-	@Override
-	public void addViewControllers(ViewControllerRegistry registry) {
-		for (var pathPrefix : pathPrefixes) {
-			registry.addRedirectViewController(pathPrefix, pathPrefix + "/index");
-		}
-	}
-
+  @Override
+  public void addViewControllers(ViewControllerRegistry registry) {
+    for (var pathPrefix : pathPrefixes) {
+      registry.addRedirectViewController(pathPrefix, pathPrefix + "/index");
+    }
+  }
 }

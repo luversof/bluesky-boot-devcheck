@@ -13,17 +13,16 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 대상 DevCheckController를 지정합니다.<br>
  * Specifies the target DevCheckController.<br>
- * @author bluesky
  *
+ * @author bluesky
  */
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
 @RestController
 public @interface DevCheckController {
 
-	@AliasFor(annotation = RestController.class)
-	String value() default "";
-
+  @AliasFor(annotation = RestController.class)
+  String value() default "";
 }

@@ -49,4 +49,32 @@
 		<!-- (e) servlet web -->
 
 </dependencies>
+
+	<profiles>
+		<profile>
+			<id>sonarqube</id>
+			<build>
+				<plugins>
+					<!-- 이 모듈의 테스트가 bluesky-boot-devcheck 코드도 실행하므로 커버리지를 합쳐서 낸다 -->
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>${jacoco-maven-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>report-aggregate</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>report-aggregate</goal>
+								</goals>
+								<configuration>
+									<includeCurrentProject>true</includeCurrentProject>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

@@ -81,7 +81,9 @@ class DevCheckInfoMvcServiceTests {
   }
 
   static class UrlSample {
-    public void find(@PathVariable String id, String name) {}
+    public void find(@PathVariable String id, String name) {
+      // 시그니처만 쓴다 - 파라미터 이름과 @PathVariable 으로 URL 을 만드는지 본다
+    }
   }
 
   @Configuration(proxyBeanMethods = false)

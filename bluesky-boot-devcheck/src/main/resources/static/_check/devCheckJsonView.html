@@ -279,7 +279,9 @@ function reloadUrl() {
 async function load(url) {
   hideMessage();
   document.getElementById("jvUrl").value = url;
-  document.getElementById("jvRawOpen").href = url;
+  // 같은 출처 검사를 통과한 주소만 링크로 - ?url=javascript:... 가 클릭으로 실행되면 안 된다
+  var safe = sameOriginUrl(url);
+  document.getElementById("jvRawOpen").href = safe || "#";
   setPageParam("url", url);
 
   if (url.indexOf("{") !== -1) {
@@ -287,7 +289,6 @@ async function load(url) {
     showMessage("이 URL에는 채워야 할 파라미터(예: {id})가 있습니다. 위 주소창에서 값을 채운 뒤 [조회]를 누르세요.", false);
     return;
   }
-  var safe = sameOriginUrl(url);
   if (!safe) { showMessage("동일 출처(same-origin) URL만 조회할 수 있습니다: " + url, true); return; }
 
   clearTree();

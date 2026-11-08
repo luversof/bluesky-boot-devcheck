@@ -36,18 +36,18 @@ If you are using Thymeleaf, the list is provided based on the Thymeleaf UI, othe
 ### properties
 
 <!--
-이 라이브러리는 dependency에 추가하면 기본 활성화되어 있습니다.
+이 라이브러리는 설정 값과 로그를 보여 주므로 기본으로 꺼져 있습니다.
 
-라이브 서비스 환경에서 이 라이브러리의 기능을 비활성화하고 싶은 경우 다음과 같이 설정합니다.
+개발·테스트 환경에서만 다음과 같이 켭니다. 꺼져 있으면 직접 만든 `@DevCheckController` 도 등록되지 않습니다.
 -->
 
-This library is enabled by default when you add it to a dependency.
+This library shows configuration values and logs, so it is disabled by default.
 
-If you want to disable the functionality of this library in your live service environment, set it up as follows
+Enable it only in development or test environments, as follows. While it is disabled, your own `@DevCheckController` classes are not registered either.
 
 
 ```properties
-bluesky-boot.dev-check.enabled=false
+bluesky-boot.dev-check.enabled=true
 ```
 
 <!--
@@ -76,7 +76,7 @@ The default value is `/_check`.
 
 
 ```properties
-bluesky-boot.dev-check.path-prefix=/info/_check
+bluesky-boot.dev-check.path-prefixes=/info/_check
 ```
 
 <!--
@@ -87,7 +87,7 @@ You can also set it to a path pattern.
 
 
 ```properties
-bluesky-boot.dev-check.path-prefix=/{somePath}/_check
+bluesky-boot.dev-check.path-prefixes=/{somePath}/_check
 ```
 
 
@@ -115,25 +115,24 @@ It can be used for controller methods and utility static methods.
 <!-- 
 controller bean이 다음 조건을 만족하는 `/_check` page 목록화 대상입니다.
 
-* `@DevCheckController` annotation을 선언
+* `@DevCheckController` annotation을 선언 (`@RestController` 포함)
 * produce 속성은 `application/json` 
-* path는 `${bluesky-boot.dev-check.path-prefix}` 로 시작하도록 설정
+* path 앞에는 `bluesky-boot.dev-check.path-prefixes` 값이 자동으로 붙음 (기본 `/_check`)
 
 다음과 같이 controller를 생성합니다.
 -->
  
 The controller bean is the target of the `/_check` page listing that satisfies the following conditions.
 
-* Declare the `@DevCheckController` annotation
+* Declare the `@DevCheckController` annotation (it includes `@RestController`)
 * The produce attribute is set to `application/json` 
-* Set the path to start with `${bluesky-boot.dev-check.path-prefix}`.
+* The path is prefixed with `bluesky-boot.dev-check.path-prefixes` automatically (default `/_check`).
 
 Create a controller like this:
 
 ```java
 @DevCheckController
-@RestController
-@RequestMapping(value = "${bluesky-boot.dev-check.path-prefix}/core",  produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/core", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DevCheckCoreController {
 
 	private ApplicationContext applicationContext;

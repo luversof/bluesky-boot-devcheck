@@ -20,12 +20,6 @@
 			<artifactId>jackson-annotations</artifactId>
 			<optional>true</optional>
 		</dependency>
-		
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-aspectj</artifactId>
-			<optional>true</optional>
-		</dependency>
 
 		<!-- (s) test -->
 		<dependency>

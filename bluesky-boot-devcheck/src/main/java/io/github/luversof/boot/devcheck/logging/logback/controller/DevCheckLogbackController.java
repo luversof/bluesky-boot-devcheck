@@ -6,7 +6,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import ch.qos.logback.core.CoreConstants;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import io.github.luversof.boot.devcheck.logging.logback.service.LogbackAppenderService;
@@ -24,8 +23,7 @@ public class DevCheckLogbackController {
   @DevCheckDescription("Check last 500 line log")
   @GetMapping("/logView")
   public List<String> logView() {
-    return logbackAppenderService.getLogs().stream()
-        .map(log -> log.replace(CoreConstants.LINE_SEPARATOR, "").replace("\t", ""))
-        .toList();
+    // 끝 줄바꿈만 뗀다 - 안쪽 줄바꿈까지 지우면 스택 트레이스 프레임이 한 줄로 붙는다
+    return logbackAppenderService.getLogs().stream().map(String::stripTrailing).toList();
   }
 }

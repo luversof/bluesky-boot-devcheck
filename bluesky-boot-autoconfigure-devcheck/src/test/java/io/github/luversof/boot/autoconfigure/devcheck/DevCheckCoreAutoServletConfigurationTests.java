@@ -58,6 +58,7 @@ class DevCheckCoreAutoServletConfigurationTests {
             "bluesky-boot.core.module-name-set=a,b",
             "bluesky-boot.core.some-password=verysecret",
             "bluesky-boot.core.api-key=sk-live-123",
+            "bluesky-boot.core.key-store=classpath:keystore.p12",
             "bluesky-boot.core.db-url=jdbc:mysql://app:dbpass@db.local:3306/main",
             "bluesky-boot.core.raw-source=resolved-value",
             "bluesky-boot.core.placeholder-sample=${bluesky-boot.core.raw-source}")
@@ -81,6 +82,8 @@ class DevCheckCoreAutoServletConfigurationTests {
           assertThat(placeholder).containsEntry("resolvedValue", "resolved-value");
           assertThat(byName).containsEntry("bluesky-boot.core.some-password", "****");
           assertThat(byName).containsEntry("bluesky-boot.core.api-key", "****");
+          // "key" alone is not a secret: a keystore path stays readable
+          assertThat(byName).containsEntry("bluesky-boot.core.key-store", "classpath:keystore.p12");
           // a password inside a URL value is hidden, the rest of the URL stays readable
           assertThat(byName)
               .containsEntry(

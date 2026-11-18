@@ -23,6 +23,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.util.UrlPathHelper;
 
 import io.github.luversof.boot.devcheck.DevCheckProperties;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
@@ -47,12 +48,9 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
 
   public List<DevCheckInfo> getDevCheckInfoList() {
     var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
-    var currentRequestURI =
-        ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
-            .getRequest()
-            .getRequestURI();
     var currentPathPrefix =
-        DevCheckUtil.getCurrentPathPrefix(devCheckProperties.getPathPrefixes(), currentRequestURI);
+        DevCheckUtil.getCurrentPathPrefix(
+            devCheckProperties.getPathPrefixes(), currentPathWithinApplication());
     return devCheckInfoListMap.computeIfAbsent(
         currentPathPrefix == null ? "" : currentPathPrefix, prefix -> createDevCheckInfoList());
   }
@@ -62,12 +60,10 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
 
     var handlerMethodMap = getTargetHandlerMethodMap();
     handlerMethodMap.entrySet().stream()
-        .filter(map ->
-            (!map.getValue().hasMethodAnnotation(DevCheckDescription.class)
-                || (map.getValue().hasMethodAnnotation(DevCheckDescription.class)
-                    && map.getValue()
-                        .getMethodAnnotation(DevCheckDescription.class)
-                        .displayable())))
+        .filter(map -> {
+          var description = map.getValue().getMethodAnnotation(DevCheckDescription.class);
+          return description == null || description.displayable();
+        })
         .forEach(map -> devCheckInfoList.add(createDevCheckInfo(map)));
     return devCheckInfoList.stream()
         .sorted(
@@ -121,29 +117,32 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
     // 구하려고 하는 값 : beanName, method, urlList, description
     String beanName = handlerMethod.getBean().toString();
     String method = handlerMethod.getMethod().getName();
-    var urlList = new ArrayList<String>();
     String description = null;
-
-    for (String pattern : requestMappingInfo.getPatternValues()) {
-      urlList.add(getUrlWithParameter(pattern, handlerMethod.getMethod()));
-    }
 
     var methodAnnotation = handlerMethod.getMethodAnnotation(DevCheckDescription.class);
     if (methodAnnotation != null) {
       description = methodAnnotation.value();
     }
 
-    // urlList의 경우 현재 요청의 path와 일치하는 것을 우선 정렬
-    var devCheckProperties = applicationContext.getBean(DevCheckProperties.class);
-
-    // 현재 요청 주소에 대한 pathPrefix 를 구해야 함.
-    var currentRequestURI =
-        ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
-            .getRequest()
-            .getRequestURI();
-    DevCheckUtil.sortUrlList(urlList, devCheckProperties.getPathPrefixes(), currentRequestURI);
+    // 현재 요청의 path prefix 주소를 앞에 둔다 - 컨텍스트 경로를 붙이기 전에 비교해야 맞는다
+    var patterns = new ArrayList<>(requestMappingInfo.getPatternValues());
+    DevCheckUtil.sortUrlList(
+        patterns,
+        applicationContext.getBean(DevCheckProperties.class).getPathPrefixes(),
+        currentPathWithinApplication());
+    var urlList =
+        patterns.stream()
+            .map(pattern -> getUrlWithParameter(pattern, handlerMethod.getMethod()))
+            .toList();
 
     return new DevCheckInfo(beanName, method, urlList, description);
+  }
+
+  /** 컨텍스트 경로(/app 등)를 뺀 현재 요청 경로. path prefix 는 이 경로 기준이다. */
+  private static String currentPathWithinApplication() {
+    var request =
+        ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+    return UrlPathHelper.defaultInstance.getPathWithinApplication(request);
   }
 
   public String getUrlWithParameter(String pattern, Method method) {

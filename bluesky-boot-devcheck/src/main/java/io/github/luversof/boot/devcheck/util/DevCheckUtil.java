@@ -26,9 +26,10 @@ public class DevCheckUtil {
       return pathPrefixes[0];
     }
 
+    // 가장 긴 것 - /_check 와 /_check2 가 둘 다 /_check2/x 의 앞부분이므로 짧은 것을 고르면 틀린다
     return Arrays.stream(pathPrefixes)
         .filter(currentRequestURI::startsWith)
-        .min(Comparator.comparingInt(String::length))
+        .max(Comparator.comparingInt(String::length))
         .orElse(null);
   }
 

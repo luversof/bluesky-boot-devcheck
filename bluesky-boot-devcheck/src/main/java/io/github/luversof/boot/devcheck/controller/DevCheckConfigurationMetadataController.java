@@ -52,7 +52,16 @@ public class DevCheckConfigurationMetadataController {
 
   /** Property names that look like a secret are reported masked. */
   private static final String[] SECRET_HINTS = {
-    "password", "secret", "token", "credential", "key", "passphrase"
+    "password",
+    "secret",
+    "token",
+    "credential",
+    "api-key",
+    "apikey",
+    "access-key",
+    "private-key",
+    "privatekey",
+    "passphrase"
   };
 
   /** The password part of {@code scheme://user:password@host}, which can sit in any value. */

@@ -71,6 +71,24 @@ class DevCheckInfoMvcServiceTests {
   }
 
   @Test
+  void urlsOfTheCurrentPrefixComeFirstUnderAContextPath() {
+    this.contextRunner
+        .withPropertyValues("bluesky-boot.dev-check.path-prefixes=/_check,/_check2")
+        .run(context -> {
+          // 요청 URI 에는 컨텍스트 경로가 붙고, /_check 는 /_check2 의 앞부분이기도 하다
+          var request = new MockHttpServletRequest("GET", "/app/_check2/api/devCheckInfoList");
+          request.setContextPath("/app");
+          RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+          var list = context.getBean(DevCheckInfoMvcService.class).getDevCheckInfoList();
+
+          assertThat(list)
+              .isNotEmpty()
+              .allSatisfy(info -> assertThat(info.urlList().get(0)).startsWith("/app/_check2/"));
+        });
+  }
+
+  @Test
   void queryStartsWithQuestionMarkAfterPathVariable() throws NoSuchMethodException {
     RequestContextHolder.setRequestAttributes(
         new ServletRequestAttributes(new MockHttpServletRequest("GET", "/_check/index")));

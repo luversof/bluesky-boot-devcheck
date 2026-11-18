@@ -79,13 +79,12 @@ public class DevCheckUtilInfoService {
   private DevCheckUtilInfo createDevCheckUtilInfo(Class<?> targetClass) {
     var devCheckUtilMethodInfoList = new ArrayList<DevCheckUtilMethodInfo>();
     Arrays.asList(targetClass.getDeclaredMethods()).stream()
-        .filter(method ->
-            Modifier.isPublic(method.getModifiers())
-                && (!AnnotatedElementUtils.hasAnnotation(method, DevCheckDescription.class)
-                    || (AnnotatedElementUtils.hasAnnotation(method, DevCheckDescription.class)
-                        && AnnotatedElementUtils.findMergedAnnotation(
-                                method, DevCheckDescription.class)
-                            .displayable())))
+        .filter(method -> {
+          var description =
+              AnnotatedElementUtils.findMergedAnnotation(method, DevCheckDescription.class);
+          return Modifier.isPublic(method.getModifiers())
+              && (description == null || description.displayable());
+        })
         .forEach(method -> devCheckUtilMethodInfoList.add(createDevCheckUtilMethodInfo(method)));
 
     return new DevCheckUtilInfo(targetClass.getSimpleName(), devCheckUtilMethodInfoList);

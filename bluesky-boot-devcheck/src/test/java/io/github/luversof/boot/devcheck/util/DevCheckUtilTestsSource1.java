@@ -16,7 +16,9 @@ public enum DevCheckUtilTestsSource1 {
   CASE_D(
       new String[] {"/_check", "/test/_check", "/test/test2/_check"},
       "/test/test2/_check/asdf/asdf/sadf",
-      "/test/test2/_check");
+      "/test/test2/_check"),
+  // 한 접두어가 다른 접두어의 앞부분이면 긴 쪽이 맞다
+  CASE_E(new String[] {"/_check", "/_check2"}, "/_check2/asdf", "/_check2");
 
   private String[] pathPrefixes;
 

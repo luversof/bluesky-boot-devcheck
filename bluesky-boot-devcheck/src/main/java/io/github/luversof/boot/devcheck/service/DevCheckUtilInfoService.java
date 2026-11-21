@@ -91,23 +91,13 @@ public class DevCheckUtilInfoService {
   }
 
   private DevCheckUtilMethodInfo createDevCheckUtilMethodInfo(Method method) {
-    String description = null;
-    if (AnnotatedElementUtils.hasAnnotation(method, DevCheckDescription.class)) {
-      var mergedAnnotation =
-          AnnotatedElementUtils.findMergedAnnotation(method, DevCheckDescription.class);
-      if (mergedAnnotation != null) {
-        description = mergedAnnotation.value();
-      }
-    }
+    var annotation = AnnotatedElementUtils.findMergedAnnotation(method, DevCheckDescription.class);
+    var description = annotation == null ? null : annotation.value();
 
     // parameters string format
-    var targetParameters = method.getParameters();
     var parameterList = new ArrayList<String>();
-    if (targetParameters != null && targetParameters.length > 0) {
-      for (var targetParameter : targetParameters) {
-        parameterList.add(
-            targetParameter.getType().getSimpleName() + " " + targetParameter.getName());
-      }
+    for (var parameter : method.getParameters()) {
+      parameterList.add(parameter.getType().getSimpleName() + " " + parameter.getName());
     }
 
     return new DevCheckUtilMethodInfo(

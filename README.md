@@ -163,12 +163,12 @@ The getMapping method of that controller is added to the `/_check` list, as show
 ### utility static method
 
 <!--
-`/_check/util` 목록에 추가할 utility class에 @DevCheckUtil 또는 @ReactiveDevCheckUtil annotation을 선언합니다.
+`/_check/util` 목록에 추가할 utility class에 @DevCheckUtil annotation을 선언합니다.
 
 다음과 같이 사용합니다.
 -->
 
-Declare the @DevCheckUtil or @ReactiveDevCheckUtil annotation on the utility class you want to add to the `/_check/util` list.
+Declare the @DevCheckUtil annotation on the utility class you want to add to the `/_check/util` list.
 
 Use it like this:
 

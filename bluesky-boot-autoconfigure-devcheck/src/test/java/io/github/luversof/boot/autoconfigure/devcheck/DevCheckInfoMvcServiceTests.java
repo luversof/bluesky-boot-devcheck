@@ -5,6 +5,9 @@ import static io.github.luversof.boot.autoconfigure.devcheck.AutoConfigurationTe
 import static io.github.luversof.boot.autoconfigure.devcheck.AutoConfigurationTestInfo.DEVCHECK_SERVLET_CONFIGURATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Locale;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -13,12 +16,18 @@ import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.service.servlet.DevCheckInfoMvcService;
+import jakarta.servlet.http.HttpServletRequest;
 
 class DevCheckInfoMvcServiceTests {
 
@@ -98,9 +107,59 @@ class DevCheckInfoMvcServiceTests {
         .isEqualTo("/_check/items/{id}?name={name}");
   }
 
+  @Test
+  void queryUsesRequestParamNamesAndSkipsNonQueryArguments() throws NoSuchMethodException {
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest("GET", "/_check/index")));
+    var method =
+        UrlSample.class.getDeclaredMethod(
+            "search",
+            String.class,
+            HttpServletRequest.class,
+            Locale.class,
+            String.class,
+            List.class,
+            int.class);
+
+    assertThat(new DevCheckInfoMvcService().getUrlWithParameter("/_check/search", method))
+        .isEqualTo("/_check/search?q={q}&tags={tags}&page={page}");
+  }
+
+  @Test
+  void listsJsonControllersWithCharset() {
+    this.contextRunner
+        .withUserConfiguration(CharsetController.class)
+        .run(context -> {
+          RequestContextHolder.setRequestAttributes(
+              new ServletRequestAttributes(new MockHttpServletRequest("GET", "/_check/index")));
+
+          assertThat(context.getBean(DevCheckInfoMvcService.class).getDevCheckInfoList())
+              .anyMatch(info -> info.method().equals("charsetJson"));
+        });
+  }
+
   static class UrlSample {
     public void find(@PathVariable String id, String name) {
       // 시그니처만 쓴다 - 파라미터 이름과 @PathVariable 으로 URL 을 만드는지 본다
+    }
+
+    public void search(
+        @RequestParam("q") String query,
+        HttpServletRequest request,
+        Locale locale,
+        @RequestHeader String token,
+        @RequestParam List<String> tags,
+        int page) {
+      // 시그니처만 쓴다 - 쿼리로 오지 않는 인자는 빠지고, @RequestParam 이름을 따르는지 본다
+    }
+  }
+
+  @DevCheckController
+  @RequestMapping(value = "/charset", produces = "application/json;charset=UTF-8")
+  static class CharsetController {
+    @GetMapping("/json")
+    public String charsetJson() {
+      return "{}";
     }
   }
 

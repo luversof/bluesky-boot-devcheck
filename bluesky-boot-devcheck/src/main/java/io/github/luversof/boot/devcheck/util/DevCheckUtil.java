@@ -4,9 +4,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.CollectionUtils;
 
 public class DevCheckUtil {
+
+  private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
   private DevCheckUtil() {}
 
@@ -26,9 +29,9 @@ public class DevCheckUtil {
       return pathPrefixes[0];
     }
 
-    // 가장 긴 것 - /_check 와 /_check2 가 둘 다 /_check2/x 의 앞부분이므로 짧은 것을 고르면 틀린다
+    // /{site}/_check 같은 패턴 prefix 도 맞춰 본다. 둘 이상 맞으면 가장 긴 것
     return Arrays.stream(pathPrefixes)
-        .filter(currentRequestURI::startsWith)
+        .filter(pathPrefix -> PATH_MATCHER.match(pathPrefix + "/**", currentRequestURI))
         .max(Comparator.comparingInt(String::length))
         .orElse(null);
   }

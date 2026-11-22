@@ -11,18 +11,22 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.DefaultParameterNameDiscoverer;
+import org.springframework.core.MethodParameter;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.servlet.mvc.method.annotation.ServletRequestMethodArgumentResolver;
 import org.springframework.web.util.UrlPathHelper;
 
 import io.github.luversof.boot.devcheck.DevCheckProperties;
@@ -37,6 +41,10 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
   private final Map<String, List<DevCheckInfo>> devCheckInfoListMap = new ConcurrentHashMap<>();
 
   private ApplicationContext applicationContext;
+
+  /** Locale·TimeZone 처럼 단순 타입이어도 요청에서 채우는 인자를 가려낸다. */
+  private static final ServletRequestMethodArgumentResolver SERVLET_REQUEST_ARGUMENT =
+      new ServletRequestMethodArgumentResolver();
 
   private final ParameterNameDiscoverer parameterNameDiscoverer =
       new DefaultParameterNameDiscoverer();
@@ -105,7 +113,9 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
                     .anyMatch(pattern -> Arrays.stream(pathPrefixes).anyMatch(pattern::startsWith))
                 && handlerMapping.getKey().getProducesCondition().getExpressions().stream()
                     .anyMatch(mediaTypeExpression ->
-                        mediaTypeExpression.getMediaType().equals(MediaType.APPLICATION_JSON)))
+                        // charset 같은 파라미터가 붙어도 JSON 이다
+                        MediaType.APPLICATION_JSON.equalsTypeAndSubtype(
+                            mediaTypeExpression.getMediaType())))
         .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
@@ -155,23 +165,45 @@ public class DevCheckInfoMvcService implements ApplicationContextAware {
 
     var parameterNames = parameterNameDiscoverer.getParameterNames(method);
     if (parameterNames != null) {
-      var parameters = method.getParameters();
       // 첫 query 파라미터에 "?" - 앞쪽 path variable 을 건너뛰어도 그렇다
       var separator = "?";
       for (int i = 0; i < parameterNames.length; i++) {
-        if (parameters[i].isAnnotationPresent(PathVariable.class)) {
+        var name = queryParameterName(method, i, parameterNames[i]);
+        if (name == null) {
           continue;
         }
-        stringBuilder
-            .append(separator)
-            .append(parameterNames[i])
-            .append("={")
-            .append(parameterNames[i])
-            .append("}");
+        stringBuilder.append(separator).append(name).append("={").append(name).append("}");
         separator = "&";
       }
     }
 
     return stringBuilder.toString().replace("//", "/");
+  }
+
+  /**
+   * 쿼리 파라미터로 받는 인자의 이름. @RequestParam 이름을 따르고, 요청 객체·Locale·@PathVariable·@RequestBody 처럼 쿼리에서 오지
+   * 않는 인자는 null.
+   */
+  private static String queryParameterName(Method method, int index, String javaName) {
+    var parameter = method.getParameters()[index];
+    var requestParam = parameter.getAnnotation(RequestParam.class);
+    if (requestParam != null) {
+      var name =
+          StringUtils.hasText(requestParam.name()) ? requestParam.name() : requestParam.value();
+      return StringUtils.hasText(name) ? name : javaName;
+    }
+    var webAnnotated =
+        Arrays.stream(parameter.getAnnotations())
+            .anyMatch(annotation ->
+                annotation
+                    .annotationType()
+                    .getPackageName()
+                    .equals(RequestParam.class.getPackageName()));
+    if (webAnnotated
+        || !BeanUtils.isSimpleValueType(parameter.getType())
+        || SERVLET_REQUEST_ARGUMENT.supportsParameter(new MethodParameter(method, index))) {
+      return null;
+    }
+    return javaName;
   }
 }

@@ -18,7 +18,9 @@ public enum DevCheckUtilTestsSource1 {
       "/test/test2/_check/asdf/asdf/sadf",
       "/test/test2/_check"),
   // 한 접두어가 다른 접두어의 앞부분이면 긴 쪽이 맞다
-  CASE_E(new String[] {"/_check", "/_check2"}, "/_check2/asdf", "/_check2");
+  CASE_E(new String[] {"/_check", "/_check2"}, "/_check2/asdf", "/_check2"),
+  // 패턴 prefix 도 찾는다 - 예전에는 문자열 비교라 null 이었다
+  CASE_F(new String[] {"/_check", "/{site}/_check"}, "/kr/_check/index", "/{site}/_check");
 
   private String[] pathPrefixes;
 

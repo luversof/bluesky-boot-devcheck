@@ -16,6 +16,7 @@ import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -23,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
@@ -64,7 +67,7 @@ class DevCheckInfoMvcServiceTests {
   @Test
   void listsControllersWithAntPathMatcher() {
     this.contextRunner
-        .withPropertyValues("spring.mvc.pathmatch.matching-strategy=ant-path-matcher")
+        .withUserConfiguration(AntPathMatcherConfiguration.class)
         .run(context -> {
           // ant 방식이면 PathPattern 조건이 없다 - 예전에는 이 때문에 목록이 비었다
           assertThat(
@@ -160,6 +163,15 @@ class DevCheckInfoMvcServiceTests {
     @GetMapping("/json")
     public String charsetJson() {
       return "{}";
+    }
+  }
+
+  /** Boot 4.2 removed spring.mvc.pathmatch.matching-strategy=ant-path-matcher; apps still can. */
+  @Configuration(proxyBeanMethods = false)
+  static class AntPathMatcherConfiguration implements WebMvcConfigurer {
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+      configurer.setPathMatcher(new AntPathMatcher());
     }
   }
 

@@ -20,7 +20,7 @@ public class DevCheckLogbackController {
     this.logbackAppenderService = logbackAppenderService;
   }
 
-  @DevCheckDescription("Check last 500 line log")
+  @DevCheckDescription("최근 로그 500줄 조회")
   @GetMapping("/logView")
   public List<String> logView() {
     // 끝 줄바꿈만 뗀다 - 안쪽 줄바꿈까지 지우면 스택 트레이스 프레임이 한 줄로 붙는다

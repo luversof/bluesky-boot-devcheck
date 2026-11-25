@@ -23,25 +23,25 @@ public class DevCheckCoreController {
     this.applicationContext = applicationContext;
   }
 
-  @DevCheckDescription("spring activeProfiles")
+  @DevCheckDescription("활성 프로필 조회")
   @GetMapping("/activeProfiles")
   public String[] activeProfiles() {
     return applicationContext.getEnvironment().getActiveProfiles();
   }
 
-  @DevCheckDescription("locale")
+  @DevCheckDescription("현재 locale 조회")
   @GetMapping("/locale")
   public Locale locale() {
     return LocaleContextHolder.getLocale();
   }
 
-  @DevCheckDescription("LocaleDateTime.now()")
+  @DevCheckDescription("현재 LocalDateTime 조회")
   @GetMapping("/localDateTimeNow")
   public LocalDateTime localeDateTimeNow() {
     return LocalDateTime.now();
   }
 
-  @DevCheckDescription("ZonedDateTime.now()")
+  @DevCheckDescription("현재 ZonedDateTime 조회")
   @GetMapping("/zonedDateTimeNow")
   public ZonedDateTime zonedDateTimeNow() {
     return ZonedDateTime.now();

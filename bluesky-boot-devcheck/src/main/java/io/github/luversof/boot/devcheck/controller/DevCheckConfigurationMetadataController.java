@@ -73,7 +73,7 @@ public class DevCheckConfigurationMetadataController {
     this.environment = environment;
   }
 
-  @DevCheckDescription("spring-configuration-metadata 조회 (properties viewer용)")
+  @DevCheckDescription("설정 메타데이터 조회")
   @GetMapping("/configurationMetadata")
   public Map<String, Object> configurationMetadata() {
     var sources = new ArrayList<String>();
@@ -111,7 +111,7 @@ public class DevCheckConfigurationMetadataController {
    *
    * @param prefix property name prefixes to include; nothing is returned without one
    */
-  @DevCheckDescription("현재 애플리케이션에 설정된 properties 조회 (prefix 지정 필요)")
+  @DevCheckDescription("prefix별 적용 properties 조회")
   @GetMapping("/applicationProperties")
   public Map<String, Object> applicationProperties(
       @RequestParam(name = "prefix", required = false) List<String> prefix) {
